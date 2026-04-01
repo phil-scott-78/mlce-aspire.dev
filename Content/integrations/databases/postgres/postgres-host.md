@@ -1,0 +1,547 @@
+---
+title: PostgreSQL Hosting integration
+description: Learn how to use the Aspire PostgreSQL Hosting integration to orchestrate and configure a PostgreSQL database in an Aspire solution.
+order: 313
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/postgresql-icon.png" Alt="PostgreSQL logo">
+
+To get started with the Aspire PostgreSQL integrations, follow the [Get started with PostgreSQL integrations](/integrations/databases/postgres/postgres-get-started) guide. If you want to learn how to use the PostgreSQL Entity Framework Core (EF Core) client integration, see [Get started with the PostgreSQL Entity Framework Core integrations](/integrations/databases/efcore/postgres/postgresql-get-started).
+</IntegrationIcon>
+
+This article includes full details on the Aspire PostgreSQL Hosting integration, with examples for both `AppHost.cs` and `apphost.ts`, so you can model PostgreSQL server and database resources in your [`AppHost`](/docs/fundamentals/core-concepts/app-host) project.
+
+Use this selector to switch the C# and TypeScript examples throughout the page.
+
+## Installation
+
+The PostgreSQL hosting integration models various PostgreSQL resources as the following types.
+
+- `PostgresServerResource`
+- `PostgresDatabaseResource`
+- `PostgresPgAdminContainerResource`
+- `PostgresPgWebContainerResource`
+
+To access these types and APIs for expressing them as resources in your [`AppHost`](/docs/fundamentals/core-concepts/app-host) project, install the [📦 Aspire.Hosting.PostgreSQL](https://www.nuget.org/packages/Aspire.Hosting.PostgreSQL) NuGet package:
+
+
+**C#**
+
+
+```bash title="Terminal"
+aspire add postgres
+```
+
+Or, choose a manual installation approach:
+
+```csharp title="C# — AppHost.cs"
+#:package Aspire.Hosting.PostgreSQL@*
+```
+
+```xml title="XML — AppHost.csproj"
+<PackageReference Include="Aspire.Hosting.PostgreSQL" Version="*" />
+```
+
+
+**TypeScript**
+
+
+```bash title="Terminal"
+aspire add postgres
+```
+
+This updates your `aspire.config.json` with the PostgreSQL hosting integration package:
+
+```json title="aspire.config.json" ins={3}
+{
+  "packages": {
+    "Aspire.Hosting.PostgreSQL": "13.2.0"
+  }
+}
+```
+
+
+## Add PostgreSQL server resource
+
+In your AppHost project, add a PostgreSQL server resource and then add a database resource as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres");
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>("apiservice")
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+<Steps>
+<Step stepNumber="1">
+When Aspire adds a container image to the app host, as shown in the preceding example with the `docker.io/library/postgres` image, it creates a new PostgreSQL server instance on your local machine. A reference to the `postgresdb` database resource is then used to add a dependency to the consuming project.
+
+</Step>
+<Step stepNumber="2">
+When adding a database resource to the app model, the database is created if it doesn't already exist. The creation of the database relies on the AppHost eventing APIs, specifically `ResourceReadyEvent`. In other words, when the `postgres` resource is _ready_, the event is raised and the database resource is created.
+
+</Step>
+<Step stepNumber="3">
+The PostgreSQL server resource includes default credentials with a `username` of `"postgres"` and a randomly generated `password` using the `CreateDefaultPasswordParameter` method.
+
+</Step>
+<Step stepNumber="4">
+The AppHost reference call configures a connection in the consuming project named after the referenced database resource, such as `postgresdb` in the preceding example.
+
+</Step>
+</Steps>
+
+> [!TIP]
+> If you'd rather connect to an existing PostgreSQL server, use the existing-resource pattern instead of creating a new containerized PostgreSQL server in your AppHost.
+
+> [!NOTE]
+> When you reference a PostgreSQL resource from the AppHost, Aspire makes several properties available to the consuming project, such as connection strings, URIs, and port numbers. For a complete list of these properties, see [Connection properties](/integrations/databases/postgres/postgres-connect/#connection-properties).
+
+## Add PostgreSQL resource with database scripts
+
+By default, when you add a `PostgresDatabaseResource`, it relies on the following script to create the database:
+
+```sql title="SQL — Default database creation script"
+CREATE DATABASE "<QUOTED_DATABASE_NAME>"
+```
+
+To alter the default script, configure the database resource with a custom creation script:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres");
+
+var databaseName = "app_db";
+var creationScript = $$"""
+    -- Create the database
+    CREATE DATABASE {{databaseName}};
+
+    """;
+
+var db = postgres.AddDatabase(databaseName)
+    .WithCreationScript(creationScript);
+
+builder.AddProject<Projects.ExampleProject>()
+    .WithReference(db)
+    .WaitFor(db);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+
+const databaseName = "app_db";
+const creationScript = `
+-- Create the database
+CREATE DATABASE ${databaseName};
+`;
+
+const db = await postgres.addDatabase(databaseName);
+await db.withCreationScript(creationScript);
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(db)
+    .waitFor(db);
+
+// After adding all resources, run the app...
+```
+
+
+The preceding example creates a database named `app_db`. The script is run when the database resource is created. The script is passed as a string to the database resource's creation-script API and then run in the context of the PostgreSQL resource.
+
+> [!NOTE]
+> The connect to a database command (`\c`) isn't supported when using the creation script.
+
+## Add PostgreSQL pgAdmin resource
+
+Add the [**dpage/pgadmin4**](https://www.pgadmin.org/) container to the PostgreSQL resource to get a web-based admin dashboard, as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithPgAdmin();
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withPgAdmin();
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+The preceding code adds a container based on the `docker.io/dpage/pgadmin4` image. The container is used to manage the PostgreSQL server and database resources and serves a web-based admin dashboard for PostgreSQL databases.
+
+### Configure the pgAdmin host port
+
+To configure the host port for the pgAdmin container, configure the pgAdmin resource inside the callback as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithPgAdmin(pgAdmin => pgAdmin.WithHostPort(5050));
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withPgAdmin({
+    configureContainer: async pgAdmin => {
+        await pgAdmin.withHostPort({ port: 5050 });
+    }
+});
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+The preceding code adds and configures the host port for the pgAdmin container. The host port is otherwise randomly assigned.
+
+## Add PostgreSQL pgWeb resource
+
+Add the [**sosedoff/pgweb**](https://sosedoff.github.io/pgweb/) container to the PostgreSQL resource to get a web-based admin dashboard, as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithPgWeb();
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withPgWeb();
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+The preceding code adds a container based on the `docker.io/sosedoff/pgweb` image. All registered `PostgresDatabaseResource` instances are used to create a configuration file per instance, and each config is bound to the **pgweb** container bookmark directory. For more information, see [PgWeb docs: Server connection bookmarks](https://github.com/sosedoff/pgweb/wiki/Server-Connection-Bookmarks).
+
+### Configure the pgWeb host port
+
+To configure the host port for the pgWeb container, configure the pgWeb resource inside the callback as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithPgWeb(pgWeb => pgWeb.WithHostPort(5050));
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withPgWeb({
+    configureContainer: async pgWeb => {
+        await pgWeb.withHostPort({ port: 5050 });
+    }
+});
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+The preceding code adds and configures the host port for the pgWeb container. The host port is otherwise randomly assigned.
+
+## Add PostgreSQL server resource with data volume
+
+Add a data volume to the PostgreSQL server resource as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume(isReadOnly: false);
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withDataVolume({ isReadOnly: false });
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+The data volume is used to persist the PostgreSQL server data outside the lifecycle of its container. The data volume is mounted at the `/var/lib/postgresql/data` path in the PostgreSQL server container and when a `name` parameter isn't provided, the name is generated at random. For more information on data volumes and details on why they're preferred over [bind mounts](#add-postgresql-server-resource-with-data-bind-mount), see [Docker docs: Volumes](https://docs.docker.com/engine/storage/volumes).
+
+> [!CAUTION]
+> Some database integrations, including the Aspire PostgreSQL integration, can't successfully use data volumes after deployment to Azure Container Apps (ACA). This is because ACA uses Server Message Block (SMB) to connect containers to data volumes, and some systems can't use this connection. In the Aspire Dashboard, a database affected by this issue has a status of **Activating** or **Activation Failed** but is never listed as **Running**.
+> 
+>     You can resolve the problem by using the managed service **Azure Database for PostgreSQL** to host the deployed database instead of a container in ACA, which is the recommended approach regardless of this issue. For that managed-service flow, see [Azure Database for PostgreSQL Hosting integration](/integrations/cloud/azure/azure-postgresql/azure-postgresql-host).
+
+## Add PostgreSQL server resource with data bind mount
+
+Add a data bind mount to the PostgreSQL server resource as shown in the following examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithDataBindMount(
+                          source: "/PostgreSQL/Data",
+                          isReadOnly: false);
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withDataBindMount("/PostgreSQL/Data", { isReadOnly: false });
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+> [!NOTE]
+> Data [bind mounts](https://docs.docker.com/engine/storage/bind-mounts/) have limited functionality compared to [volumes](https://docs.docker.com/engine/storage/volumes/), which offer better performance, portability, and security, making them more suitable for production environments. However, bind mounts allow direct access and modification of files on the host system, ideal for development and testing where real-time changes are needed.
+
+Data bind mounts rely on the host machine's filesystem to persist the PostgreSQL server data across container restarts. The data bind mount is mounted at the `C:\PostgreSQL\Data` on Windows (or `/PostgreSQL/Data` on Unix) path on the host machine in the PostgreSQL server container. For more information on data bind mounts, see [Docker docs: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts).
+
+## Add PostgreSQL server resource with init bind mount
+
+Use initialization files to seed the PostgreSQL server. The C# AppHost exposes `WithInitBindMount(...)`, while the TypeScript AppHost exposes `withInitFiles(...)`.
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres")
+    .WithInitBindMount(@"C:\PostgreSQL\Init");
+
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const postgres = await builder.addPostgres("postgres");
+await postgres.withInitFiles(/integrations/databases/postgres/postgres-init");
+
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+The TypeScript AppHost doesn't currently expose a `withInitBindMount(...)` API for PostgreSQL. Use `withInitFiles(...)` when you want to copy initialization files into the container instead.
+
+
+The init bind mount relies on the host machine's filesystem to initialize the PostgreSQL server database with the container's _init_ folder. This folder is used for initialization, running any executable shell scripts or _.sql_ command files after the _postgres-data_ folder is created. The init bind mount is mounted at the `C:\PostgreSQL\Init` on Windows (or `/PostgreSQL/Init` on Unix) path on the host machine in the PostgreSQL server container.
+
+## Add PostgreSQL server resource with parameters
+
+When you want to explicitly provide the username and password used by the container image, you can provide these credentials as parameters. Consider the following alternative examples:
+
+
+**C#**
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var username = builder.AddParameter("username", secret: true);
+var password = builder.AddParameter("password", secret: true);
+
+var postgres = builder.AddPostgres("postgres", username, password);
+var postgresdb = postgres.AddDatabase("postgresdb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>()
+    .WithReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+**TypeScript**
+
+```typescript title="TypeScript — apphost.ts"
+
+const builder = await createBuilder();
+
+const userName = await builder.addParameter("username", { secret: true });
+const password = await builder.addParameter("password", { secret: true });
+
+const postgres = await builder.addPostgres("postgres", { userName, password });
+const postgresdb = await postgres.addDatabase("postgresdb");
+
+await builder.addNodeApp("api", "./api", "index.js")
+    .withReference(postgresdb);
+
+// After adding all resources, run the app...
+```
+
+
+### Connection properties
+
+For a full reference of PostgreSQL connection properties and environment variables — including how to connect from JavaScript, Python, Go, and .NET — see [Connect to PostgreSQL](/integrations/databases/postgres/postgres-connect).
+
+### Hosting integration health checks
+
+The PostgreSQL hosting integration automatically adds a health check for the PostgreSQL server resource. The health check verifies that the PostgreSQL server is running and that a connection can be established to it.
+
+The hosting integration relies on the [📦 AspNetCore.HealthChecks.Npgsql](https://www.nuget.org/packages/AspNetCore.HealthChecks.Npgsql) NuGet package.

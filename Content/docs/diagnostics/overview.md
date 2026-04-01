@@ -1,0 +1,142 @@
+---
+title: Diagnostics overview
+description: Learn about the diagnostics tools and features available in Aspire.
+order: 700
+---
+
+
+The following table lists the possible MSBuild and analyzer warnings and errors you might encounter with Aspire:
+
+| Diagnostic ID                                                          | Type                   | Description                                                                                                                                 |
+| ---------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ASPIRE001](/docs/diagnostics/aspire001)                                   | Warning                | The code language isn't fully supported by Aspire, some code generation targets will not run.                                               |
+| [ASPIRE002](/docs/diagnostics/aspire002)                                   | Warning                | Project is an Aspire AppHost project but necessary dependencies aren't present. Are you missing an Aspire.Hosting.AppHost PackageReference? |
+| [ASPIRE003](/docs/diagnostics/aspire003)                                   | Warning                | 'Project' is an Aspire AppHost project that requires Visual Studio version 17.10 or above to work correctly.                                |
+| [ASPIRE004](/docs/diagnostics/aspire004)                                   | Warning                | 'Project' is referenced by an Aspire Host project, but it is not an executable.                                                             |
+| [ASPIRE006](/docs/diagnostics/aspire006)                                   | (Experimental) Error   | Application model items must have valid names.                                                                                              |
+| [ASPIRE007](/docs/diagnostics/aspire007)                                   | Error                  | 'Project' requires a reference to "Aspire.AppHost.Sdk" with version "9.0.0" or greater to work correctly.                                   |
+| [ASPIRE008](/docs/diagnostics/aspire008)                                   | Error                  | 'Project' requires GenerateAssemblyInfo to be enabled for the AppHost to function correctly.                                                |
+| [ASPIREACADOMAINS001](/docs/diagnostics/aspireacadomains001)               | (Experimental) Error   | `ConfigureCustomDomain` is for evaluation purposes only and is subject to change or removal in future updates.                              |
+| [ASPIREATS001](/docs/diagnostics/aspireats001)                             | (Experimental) Warning | ATS (Aspire Type Specification) types are for evaluation purposes only and are subject to change or removal in future updates.              |
+| [ASPIREEXPORT001](/docs/diagnostics/aspireexport001)                       | Error                  | `[AspireExport]` method must be static.                                                                                                    |
+| [ASPIREEXPORT002](/docs/diagnostics/aspireexport002)                       | Error                  | Invalid export ID format (must match `[a-zA-Z][a-zA-Z0-9.]*`).                                                                            |
+| [ASPIREEXPORT003](/docs/diagnostics/aspireexport003)                       | Error                  | Return type is not ATS-compatible.                                                                                                         |
+| [ASPIREEXPORT004](/docs/diagnostics/aspireexport004)                       | Error                  | Parameter type is not ATS-compatible.                                                                                                      |
+| [ASPIREEXPORT005](/docs/diagnostics/aspireexport005)                       | Warning                | `[AspireUnion]` requires at least 2 types.                                                                                                 |
+| [ASPIREEXPORT006](/docs/diagnostics/aspireexport006)                       | Warning                | Union type is not ATS-compatible.                                                                                                          |
+| [ASPIREEXPORT007](/docs/diagnostics/aspireexport007)                       | Warning                | Duplicate export ID for the same target type.                                                                                              |
+| [ASPIREEXPORT008](/docs/diagnostics/aspireexport008)                       | Warning                | Public extension method on exported type missing `[AspireExport]` or `[AspireExportIgnore]`.                                               |
+| [ASPIREEXPORT009](/docs/diagnostics/aspireexport009)                       | Warning                | Export name may collide with other integrations.                                                                                           |
+| [ASPIREEXPORT010](/docs/diagnostics/aspireexport010)                       | Warning                | Synchronous callback invoked inline — may deadlock in multi-language app hosts.                                                            |
+| [ASPIREAZURE001](/docs/diagnostics/aspireazure001)                         | (Experimental) Error   | Publishers are for evaluation purposes only and are subject to change or removal in future updates.                                         |
+| [ASPIREAZURE002](/docs/diagnostics/aspireazure002)                         | (Experimental) Error   | Azure Container App Jobs are for evaluation purposes only and are subject to change or removal in future updates.                           |
+| [ASPIREAZURE003](/docs/diagnostics/aspireazure003)                         | (Experimental) Error   | Azure Virtual Network types and members are for evaluation purposes only and are subject to change or removal in future updates.            |
+| [ASPIRECERTIFICATES001](/docs/diagnostics/aspirecertificates001)           | (Experimental) Warning | Certificate configuration types and members are for evaluation purposes only and are subject to change or removal in future updates.        |
+| [ASPIRECOMPUTE001](/docs/diagnostics/aspirecompute001)                     | (Experimental) Error   | Compute related types and members are for evaluation purposes only and is subject to change or removal in future updates.                   |
+| [ASPIRECOMPUTE002](/docs/diagnostics/aspirecompute002)                     | (Experimental) Warning | The GetHostAddressExpression method is for evaluation purposes only and is subject to change or removal in future updates.                  |
+| [ASPIRECOMPUTE003](/docs/diagnostics/aspirecompute003)                     | (Experimental) Warning | The ContainerRegistryResource type is for evaluation purposes only and is subject to change or removal in future updates.                   |
+| [ASPIRECONTAINERRUNTIME001](/docs/diagnostics/aspirecontainerruntime001)   | (Experimental) Warning | Type is for evaluation purposes only and is subject to change or removal in future updates.                                                 |
+| [ASPIRECONTAINERSHELLEXECUTION001](/docs/diagnostics/aspirecontainershellexecution001) | (Experimental) Warning | Container shell execution property is for evaluation purposes only and is subject to change or removal in future updates.       |
+| [ASPIRECOSMOSDB001](/docs/diagnostics/aspirecosmosdb001)                   | (Experimental) Error   | `RunAsPreviewEmulator` is for evaluation purposes only and is subject to change or removal in future updates.                               |
+| [ASPIRECSHARPAPPS001](/docs/diagnostics/aspirecsharpapps001)               | (Experimental) Error   | `AddCSharpApp` is for evaluation purposes only and is subject to change or removal in future updates.                                       |
+| [ASPIREDOCKERFILEBUILDER001](/docs/diagnostics/aspiredockerfilebuilder001) | (Experimental) Warning | Dockerfile builder types and members are for evaluation purposes only and are subject to change or removal in future updates.               |
+| [ASPIREDOTNETTOOL](/docs/diagnostics/aspiredotnettool)                     | (Experimental) Warning | .NET tool resource types and members are for evaluation purposes only and are subject to change or removal in future updates.               |
+| [ASPIREEXTENSION001](/docs/diagnostics/aspireextension001)                 | (Experimental) Warning | Extension debugging support APIs are for evaluation purposes only and are subject to change or removal in future updates.                   |
+| [ASPIREFILESYSTEM001](/docs/diagnostics/aspirefilesystem001)               | (Experimental) Warning | File system service types and members are for evaluation purposes only and are subject to change or removal in future updates.              |
+| [ASPIREINTERACTION001](/docs/diagnostics/aspireinteraction001)             | (Experimental) Warning | Interaction service types and members are for evaluation purposes only and are subject to change or removal in future updates.              |
+| [ASPIREHOSTINGPYTHON001](/docs/diagnostics/aspirehostingpython001)         | (Experimental) Error   | `AddPythonApp` is for evaluation purposes only and is subject to change or removal in future updates.                                       |
+| [ASPIREMCP001](/docs/diagnostics/aspiremcp001)                             | (Experimental) Warning | MCP server types and members are for evaluation purposes only and are subject to change or removal in future updates.                       |
+| [ASPIREPIPELINES001](/docs/diagnostics/aspirepipelines001)                 | (Experimental) Error   | Pipeline infrastructure APIs are for evaluation purposes only and are subject to change or removal in future updates.                       |
+| [ASPIREPIPELINES002](/docs/diagnostics/aspirepipelines002)                 | (Experimental) Error   | Deployment state manager APIs are for evaluation purposes only and are subject to change or removal in future updates.                      |
+| [ASPIREPIPELINES003](/docs/diagnostics/aspirepipelines003)                 | (Experimental) Error   | Container image build APIs are for evaluation purposes only and are subject to change or removal in future updates.                         |
+| [ASPIREPIPELINES004](/docs/diagnostics/aspirepipelines004)                 | (Experimental) Warning | Type is for evaluation purposes only and is subject to change or removal in future updates.                                                 |
+| [ASPIREPOSTGRES001](/docs/diagnostics/aspirepostgres001)                   | (Experimental) Warning | PostgreSQL MCP integration is for evaluation purposes only and is subject to change or removal in future updates.                           |
+| [ASPIREPROBES001](/docs/diagnostics/aspireprobes001)                       | (Experimental) Warning | Probe-related types and members are for evaluation purposes only and are subject to change or removal in future updates.                    |
+| [ASPIREPROXYENDPOINTS001](/docs/diagnostics/aspireproxyendpoints001)       | (Experimental) Error   | ProxyEndpoint members are for evaluation purposes only and are subject to change or removal in future updates.                              |
+| [ASPIREPUBLISHERS001](/docs/diagnostics/aspirepublishers001)               | Error                  | Publishers are for evaluation purposes only and are subject to change or removal in future updates.                                         |
+| [ASPIREUSERSECRETS001](/docs/diagnostics/aspireusersecrets001)             | (Experimental) Warning | Type is for evaluation purposes only and is subject to change or removal in future updates.                                                 |
+
+## Suppress diagnostic
+
+You can suppress any diagnostic in this document using one of the following methods:
+
+- Add the `System.Diagnostics.CodeAnalysis.SuppressMessageAttribute` at the assembly, class, method, line, etc.
+- Include the diagnostic ID in the `NoWarn` property of your project file.
+- Use preprocessor directives in your code.
+- Configure diagnostic severity in an _.editorconfig_ file.
+
+There are some common patterns for suppressing diagnostics in .NET projects. The best method depends on your context and the specific diagnostic. Here's a quick guide to help you choose:
+
+> [!NOTE] Important
+> The following sections provide examples for suppressing the `ASPIREE000` diagnostic, which is a placeholder for any diagnostic ID you might encounter. Replace `ASPIREE000` with the actual diagnostic ID you want to suppress.
+
+### Suppress with the suppress message attribute
+
+The `System.Diagnostics.CodeAnalysis.SuppressMessageAttribute` is ideal when you need targeted, documented suppression tied directly to a specific code element like a class or method. It shines when you're making a deliberate exception to a rule that is valid in most other places. This attribute keeps the suppression close to the code it affects, which helps reviewers and future maintainers understand the rationale. While it's a clean solution for isolated cases, it can clutter the code if overused, and it's not the best choice for widespread or bulk suppressions.
+
+**When to use:**
+
+- For a specific method, class, or property where you want to document why the rule is being bypassed.
+- When the suppression is localized and unlikely to apply elsewhere.
+
+**Example:**
+
+```csharp title="C# — AppHost.cs"
+using System.Diagnostics.CodeAnalysis;
+
+[assembly: SuppressMessage("Aspire", "ASPIREE000",
+    Justification = "This is a valid reason for suppression.")]
+```
+
+### Suppress in the project file
+
+Adding the diagnostic ID to the `NoWarn` property in your _.csproj_ file is a straightforward, project-wide approach that doesn't clutter the code itself. This method is particularly useful when a diagnostic doesn't apply to your specific project scenario or when you want a blanket suppression across multiple files. However, it can be risky if used too liberally, as it can hide legitimate issues from team members or future maintainers. It's best reserved for situations where you're confident the diagnostic is irrelevant to the entire project or when a team has collectively agreed on the suppression.
+
+**When to use:**
+
+- When the diagnostic applies to the entire project and you're confident it's not relevant.
+- For build-level warnings that don't need per-file or per-method suppression.
+
+**Example:**
+
+```xml title="C# project file"
+<PropertyGroup>
+    <NoWarn>$(NoWarn);ASPIREE000</NoWarn>
+</PropertyGroup>
+```
+
+### Suppress with preprocessor directives
+
+Preprocessor directives like `#pragma warning disable` provide pinpoint control over which specific lines of code are affected by the suppression. This makes them the most precise option when you want to temporarily mute a diagnostic for a small, well-defined section of code, such as a tricky workaround or legacy code. While their precision is a strength, it can also become a burden if the suppressions are scattered throughout a file. Additionally, they make the code slightly less readable due to the added directives, so they're best used sparingly for short-lived or highly specific issues.
+
+**When to use:**
+
+- For a few lines of code in a method or block.
+- When you need fine-grained control over exactly which code is suppressed.
+
+**Example:**
+
+```csharp title="C# — AppHost.cs"
+#pragma warning disable ASPIREE000
+// Code that triggers the diagnostic
+#pragma warning restore ASPIREE000
+```
+
+### Suppress in the _.editorconfig_ file
+
+An _.editorconfig_ file is the most flexible and team-friendly way to manage diagnostic severity across your codebase. It allows you to suppress or adjust diagnostics for specific directories, file types, or even individual files, making it highly scalable for large projects. This approach keeps suppressions centralized and transparent, which is especially valuable in team environments where consistent code standards matter. It's also ideal when you need to adjust the severity of a diagnostic (for example, turning an error into a warning) rather than suppressing it entirely. The downside is that it requires creating or modifying a separate configuration file, which might feel like overkill for very small projects or one-off suppressions.
+
+**When to use:**
+
+- For managing suppressions or severity levels across multiple files or directories.
+- When you want a centralized, team-level policy for diagnostics.
+- When you need to adjust the diagnostic severity instead of completely disabling it.
+
+**Example:**
+
+```ini title=".editorconfig"
+[*.{cs,vb}]
+dotnet_diagnostic.ASPIREE000.severity = none
+```
+
+For more information about editor config files, see [Configuration files for code analysis rules](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).

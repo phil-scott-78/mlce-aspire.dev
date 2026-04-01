@@ -1,0 +1,260 @@
+---
+title: Keycloak integration
+description: Learn how to use the Keycloak integration, which includes both hosting and client integrations.
+order: 360
+---
+
+
+
+<Badge text="🧪 Preview" variant="note" size="large" />
+
+<IntegrationIcon Src="/assets/icons/keycloak-icon.svg" Alt="Keycloak logo">
+
+[Keycloak](https://www.keycloak.org/) is an open-source Identity and Access Management solution aimed at modern applications and services. The Keycloak integration enables you to connect to existing Keycloak instances or create new instances from Aspire with the `quay.io/keycloak/keycloak` container image.
+</IntegrationIcon>
+
+## Hosting integration
+
+The Keycloak hosting integration models the server as the `KeycloakResource` type. To access this type and APIs, add the [📦 Aspire.Hosting.Keycloak](https://www.nuget.org/packages/Aspire.Hosting.Keycloak) NuGet package in your AppHost project:
+
+<InstallPackage PackageName="Aspire.Hosting.Keycloak" />
+
+### Add Keycloak resource
+
+In your AppHost project, call `AddKeycloak` to add and return a Keycloak resource builder:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080);
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+                        .WithReference(keycloak)
+                        .WaitFor(keycloak);
+
+var webfrontend = builder.AddProject<Projects.Web>("webfrontend")
+                         .WithExternalHttpEndpoints()
+                         .WithReference(keycloak)
+                         .WithReference(apiService)
+                         .WaitFor(apiService);
+```
+
+> [!TIP]
+> For local development use a stable port for the Keycloak resource (`8080` in
+>   the preceding example). It can be any port, but it should be stable to avoid
+>   issues with browser cookies that will persist OIDC tokens beyond the lifetime
+>   of the AppHost.
+
+When Aspire adds a container image to the AppHost, it creates a new Keycloak instance on your local machine. The Keycloak resource includes default credentials:
+
+- `KEYCLOAK_ADMIN`: A value of `admin`
+- `KEYCLOAK_ADMIN_PASSWORD`: Random password generated using the default password parameter
+
+When the AppHost runs, the password is stored in the AppHost's secret store in the `Parameters` section:
+
+```json
+{
+  "Parameters:keycloak-password": "<THE_GENERATED_PASSWORD>"
+}
+```
+
+> [!TIP]
+> If you'd rather connect to an existing Keycloak instance, call
+>   `AddConnectionString` instead. For more information, see [Reference existing
+>   resources](/docs/fundamentals/core-concepts/resources).
+
+### Add Keycloak resource with data volume
+
+To add a data volume to the Keycloak resource, call the `WithDataVolume` method on the Keycloak resource:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080)
+                      .WithDataVolume();
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+                        .WithReference(keycloak)
+                        .WaitFor(keycloak);
+```
+
+The data volume is used to persist the Keycloak data outside the lifecycle of its container. The data volume is mounted at the `/opt/keycloak/data` path in the Keycloak container.
+
+> [!CAUTION]
+> The admin credentials are stored in the data volume. When using a data volume
+>   and if the credentials change, it will not work until you delete the volume.
+
+### Add Keycloak resource with data bind mount
+
+To add a data bind mount to the Keycloak resource, call the `WithDataBindMount` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080)
+                      .WithDataBindMount(@"C:\Keycloak\Data");
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+                        .WithReference(keycloak)
+                        .WaitFor(keycloak);
+```
+
+> [!NOTE]
+> Data bind mounts have limited functionality compared to volumes, and when you
+>   use a bind mount, a file or directory on the host machine is mounted into a
+>   container.
+
+### Add Keycloak resource with parameters
+
+When you want to explicitly provide the admin username and password used by the container image, you can provide these credentials as parameters:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var username = builder.AddParameter("username");
+var password = builder.AddParameter("password", secret: true);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080, username, password);
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+                        .WithReference(keycloak)
+                        .WaitFor(keycloak);
+```
+
+For more information on providing parameters, see [External parameters](/docs/fundamentals/core-concepts/resources).
+
+### Add Keycloak resource with realm import
+
+To import a realm into Keycloak, call the `WithRealmImport` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080)
+                      .WithRealmImport("./Realms");
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+                        .WithReference(keycloak)
+                        .WaitFor(keycloak);
+```
+
+The realm import files are mounted at `/opt/keycloak/data/import` in the Keycloak container. Realm import files are JSON files that represent the realm configuration.
+
+### Export telemetry to OTLP collector
+
+Keycloak containers can export telemetry to your OTLP collector using the `WithOtlpExporter` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var keycloak = builder.AddKeycloak("keycloak", 8080)
+    .WithOtlpExporter();
+
+var apiService = builder.AddProject<Projects.ApiService>("apiservice")
+    .WithReference(keycloak)
+    .WaitFor(keycloak);
+```
+
+This enables Keycloak to send traces, metrics, and logs to the Aspire dashboard, providing better observability for your authentication flows.
+
+### Hosting integration health checks
+
+The Keycloak hosting integration doesn't currently support health checks, nor does it automatically add them.
+
+## Client integration
+
+To get started with the Keycloak client integration, install the [📦 Aspire.Keycloak.Authentication](https://www.nuget.org/packages/Aspire.Keycloak.Authentication) NuGet package in your ASP.NET Core project:
+
+<InstallPackage PackageName="Aspire.Keycloak.Authentication" />
+
+The Keycloak client integration registers JwtBearer and OpenId Connect authentication handlers in the DI container for connecting to a Keycloak server.
+
+### Add JWT bearer authentication
+
+In the `Program.cs` file of your ASP.NET Core API project, call the `AddKeycloakJwtBearer` extension method to add JwtBearer authentication:
+
+```csharp
+builder.Services.AddAuthentication()
+                .AddKeycloakJwtBearer(
+                    serviceName: "keycloak",
+                    realm: "api",
+                    options =>
+                    {
+                        options.Audience = "store.api";
+
+                        // For development only - disable HTTPS metadata validation
+                        // In production, use explicit Authority configuration instead
+                        if (builder.Environment.IsDevelopment())
+                        {
+                            options.RequireHttpsMetadata = false;
+                        }
+                    });
+```
+
+> [!CAUTION]
+> When using `RequireHttpsMetadata = true` (the default), the JWT Bearer
+>   authentication requires the Authority URL to use HTTPS. However, Aspire
+>   service discovery uses the `https+http://` scheme, which doesn't satisfy this
+>   requirement. For production scenarios where HTTPS metadata validation is
+>   required, you need to explicitly configure the Authority URL.
+
+### Add OpenId Connect authentication
+
+In the `Program.cs` file of your API-consuming project (for example, Blazor), call the `AddKeycloakOpenIdConnect` extension method to add OpenId Connect authentication:
+
+```csharp
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddKeycloakOpenIdConnect(
+                    serviceName: "keycloak",
+                    realm: "api",
+                    options =>
+                    {
+                        options.ClientId = "StoreWeb";
+                        options.ResponseType = OpenIdConnectResponseType.Code;
+                        options.Scope.Add("store:all");
+                    });
+```
+
+## Production considerations
+
+When deploying Keycloak authentication to production environments, there are several important security considerations:
+
+### HTTPS metadata requirements
+
+By default, JWT Bearer authentication in ASP.NET Core has `RequireHttpsMetadata = true`, which requires that the Authority URL uses HTTPS.
+
+For production scenarios, configure the Authority URL explicitly:
+
+```csharp
+builder.Services.AddAuthentication()
+    .AddKeycloakJwtBearer(
+        serviceName: "keycloak",
+        realm: "MyRealm",
+        configureOptions: options =>
+        {
+            // Explicitly set the Authority for production
+            if (!builder.Environment.IsDevelopment())
+            {
+                options.Authority = "https://your-keycloak-server.com/realms/MyRealm";
+            }
+
+            options.Audience = "my.api";
+        });
+```
+
+### Connection string configuration
+
+For production deployments, consider using connection strings:
+
+```csharp
+// In AppHost.cs
+builder.AddConnectionString("keycloak", "https://your-keycloak-server.com");
+```
+
+### Security best practices
+
+- Always use `RequireHttpsMetadata = true` in production environments
+- Use secure, validated SSL certificates for your Keycloak server
+- Configure appropriate realm settings and client configurations in Keycloak
+- Implement proper token validation and audience checks
+- Consider using Keycloak's built-in security features like rate limiting and brute force protection

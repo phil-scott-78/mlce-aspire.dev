@@ -1,0 +1,196 @@
+---
+title: Aspire troubleshooting guide
+description: Solutions to common problems when getting started with Aspire, including Docker issues, port conflicts, service discovery errors, and TypeScript AppHost issues.
+order: 29
+---
+
+
+
+Having issues getting started with Aspire? This page covers solutions to the most common problems developers encounter.
+
+## Docker Desktop not running
+
+**Symptoms**: `aspire run` hangs or shows "waiting for container runtime" messages.
+
+**Solution**: Start Docker Desktop (or Podman) before running `aspire run`. Check your system tray to confirm Docker is running with a green status indicator.
+
+> [!CAUTION]
+> Aspire uses containers for databases, caches, and other resources. Without a
+>   container runtime, these resources can't start.
+
+## Port already in use
+
+**Symptoms**: Error message like "Address already in use" or "Port 5000 is already bound."
+
+**Solution**:
+
+- Stop any other applications using the same ports
+- If you have another Aspire app running, stop it first with ### How to find processes using a port
+
+## Service shows "Unhealthy" in dashboard
+
+**Symptoms**: A service has a red status or shows "Unhealthy" in the Aspire dashboard.
+
+**Solution**:
+
+
+<Steps>
+<Step stepNumber="1">
+Click on the service name in the dashboard to view its logs
+
+</Step>
+<Step stepNumber="2">
+Look for startup errors or exceptions
+
+</Step>
+<Step stepNumber="3">
+Verify the health check endpoint exists (e.g., `/health` returns a 200 OK)
+
+</Step>
+<Step stepNumber="4">
+Check that all dependencies started successfully
+
+</Step>
+</Steps>
+
+## "Connection refused" errors
+
+**Symptoms**: Your frontend can't connect to the API, showing connection refused errors.
+
+**Solution**: Make sure you're using `WaitFor()` in your AppHost:
+
+```csharp title="AppHost.cs"
+builder.AddProject<Projects.WebFrontend>("frontend")
+    .WithReference(apiService)
+    .WaitFor(apiService);  // Add this line!
+```
+
+## Environment variables not available
+
+**Symptoms**: Your service can't find connection strings or configuration that should be injected.
+
+**Solution**: Verify you're using `WithReference()` to connect resources.
+
+### Example: Connecting a database to your service
+
+In your AppHost:
+
+```csharp title="AppHost.cs"
+var db = builder.AddPostgres("db");
+var api = builder.AddProject<Projects.Api>("api")
+    .WithReference(db);  // This injects the connection string
+```
+
+In your service code, access the connection string via configuration:
+
+```csharp title="Program.cs"
+var connectionString = builder.Configuration.GetConnectionString("db");
+```
+
+The connection string is injected as an environment variable named `ConnectionStrings__db`.
+
+## Container image pull failures
+
+**Symptoms**: Error messages about failing to pull container images, or "image not found" errors.
+
+**Solution**:
+
+- Check your internet connection
+- Verify Docker Hub or your container registry is accessible
+- If using a corporate network, check proxy settings in Docker Desktop
+
+### How to manually pull and verify an image
+
+```bash
+# Try pulling the image manually
+docker pull redis:latest
+
+# If behind a proxy, configure Docker Desktop:
+# Settings > Resources > Proxies > Manual proxy configuration
+```
+
+## Dashboard not loading
+
+**Symptoms**: The Aspire dashboard URL doesn't respond or shows a blank page.
+
+**Solution**:
+
+
+<Steps>
+<Step stepNumber="1">
+Check the console output for the correct dashboard URL (it may use a different port)
+
+</Step>
+<Step stepNumber="2">
+Ensure no browser extensions are blocking the page
+
+</Step>
+<Step stepNumber="3">
+Try a different browser or incognito mode
+
+</Step>
+<Step stepNumber="4">
+Check if antivirus or firewall is blocking the connection
+
+</Step>
+</Steps>
+
+## Service discovery not working
+
+**Symptoms**: Services can't find each other by name (e.g., `http://apiservice` doesn't resolve).
+
+**Solution**: Ensure you're using the service name exactly as defined in your AppHost.
+
+### Example: Correct service discovery setup
+
+```csharp title="AppHost.cs"
+// In AppHost
+var api = builder.AddProject<Projects.Api>("apiservice");  // Name is "apiservice"
+```
+
+```csharp title="Program.cs"
+// In your consuming service, use exactly this name
+var client = new HttpClient { BaseAddress = new Uri("http://apiservice") };
+```
+
+Also verify:
+
+- Both services have `AddServiceDefaults()` called
+- The consuming service has `.WithReference(api)` in the AppHost
+
+## TypeScript AppHost issues
+
+### "Command not found" errors
+
+Ensure Node.js is installed and available in your `PATH`:
+
+```bash title="Verify Node.js installation"
+node --version
+npm --version
+```
+
+### SDK compilation errors
+
+If you encounter compilation errors in the generated `.modules/` SDK:
+
+1. Ensure you have the latest version of the Aspire CLI installed.
+2. Delete the `.modules` directory and run `aspire run` again to regenerate the SDK.
+3. Check the [Aspire GitHub issues](https://github.com/microsoft/aspire/issues) for known problems.
+
+### Debug mode
+
+Run with debug output to diagnose issues:
+
+```bash title="Run with debug output"
+aspire run --log-level Debug
+```
+
+### CLI logs
+
+Aspire CLI logs are stored at:
+
+## See also
+
+- [Create your first Aspire app](/docs/get-started/first-app)
+- [Health checks](/docs/fundamentals/observability/health-checks)
+- [Service discovery](/docs/fundamentals/services-and-networking/service-discovery)

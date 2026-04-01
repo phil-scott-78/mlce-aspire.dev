@@ -1,0 +1,14 @@
+<div class="not-prose flex items-center  gap-8 mb-6">
+    <img src="@Src"
+         alt="@Alt"
+         class="w-16 h-16 object-contain flex-none" />
+    <div class="prose dark:prose-invert max-w-none min-w-0">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Src { get; set; } = "";
+    [Parameter] public string Alt { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

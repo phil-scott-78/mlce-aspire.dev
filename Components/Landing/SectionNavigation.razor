@@ -1,0 +1,28 @@
+@if (Previous != null || Next != null)
+{
+    <div class="flex justify-between gap-4 mt-12 pt-8 border-t border-base-200 dark:border-base-700">
+        @if (Previous != null)
+        {
+            <a href="@Previous.Value.Href" class="group flex flex-col no-underline text-sm p-4 rounded-lg border border-base-300 dark:border-base-700 hover:border-primary-500 transition-colors flex-1">
+                <span class="text-xs uppercase tracking-wider text-base-400">Previous</span>
+                <span class="font-semibold text-primary-500 dark:text-primary-300 group-hover:text-primary-700 dark:group-hover:text-white">@Previous.Value.Label</span>
+            </a>
+        }
+        else
+        {
+            <div></div>
+        }
+        @if (Next != null)
+        {
+            <a href="@Next.Value.Href" class="group flex flex-col items-end text-right no-underline text-sm p-4 rounded-lg border border-base-300 dark:border-base-700 hover:border-primary-500 transition-colors flex-1">
+                <span class="text-xs uppercase tracking-wider text-base-400">Next</span>
+                <span class="font-semibold text-primary-500 dark:text-primary-300 group-hover:text-primary-700 dark:group-hover:text-white">@Next.Value.Label</span>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public (string Label, string Href)? Previous { get; set; }
+    [Parameter] public (string Label, string Href)? Next { get; set; }
+}

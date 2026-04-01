@@ -1,0 +1,66 @@
+---
+title: aspire init command
+description: Learn about the aspire init command and its usage. This command initializes Aspire support in an existing solution or creates a single-file AppHost.
+order: 135
+---
+
+
+
+## Name
+
+`aspire init` - Initialize Aspire support in an existing solution or create a single-file AppHost.
+
+## Synopsis
+
+```bash title="Aspire CLI"
+aspire init [options]
+```
+
+## Description
+
+The `aspire init` command initializes Aspire support in your existing .NET solution or creates a single-file AppHost project. This is useful when you want to add Aspire orchestration capabilities to an existing application without creating an entirely new solution structure.
+
+This command defaults to **interactive** mode. When executed without any options, the command prompts you for the necessary information. When the `--version` and `--source` options are provided, the command runs **non-interactive** mode.
+
+The command performs the following actions:
+
+- Analyzes your existing solution structure
+- Adds the necessary Aspire AppHost project or creates a single-file AppHost
+- Installs required Aspire packages
+- Sets up the initial configuration for orchestration
+
+## Options
+
+The following options are available:
+
+- **`-s, --source`**
+
+  The NuGet source to use for the project templates.
+
+- **`-v, --version`**
+
+  The version of the project templates to use.
+
+- **`--channel`**
+
+  Channel to use for templates (`stable`, `staging`, `daily`).
+
+- - - - - - ## Examples
+
+- Initialize Aspire support in the current solution interactively:
+
+  ```bash title="Aspire CLI"
+  aspire init
+  ```
+
+- Initialize Aspire support using a specific template version:
+
+  ```bash title="Aspire CLI"
+  aspire init --version 13.2.0
+  ```
+
+- Initialize Aspire support from a custom NuGet source:
+
+  ```bash title="Aspire CLI"
+  aspire init --source https://api.nuget.org/v3/index.json --version 13.2.0
+  ```

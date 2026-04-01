@@ -1,0 +1,174 @@
+@using System.Collections.Immutable
+@using MyLittleContentEngine.Services.Content.TableOfContents
+
+@if (TableOfContents != null)
+{
+    <nav>
+        <ul class="flex flex-col">
+            @foreach (var item in TableOfContents.OrderBy(i => i.Order))
+            {
+                @RenderItem(item, 0)
+            }
+        </ul>
+    </nav>
+}
+
+@code {
+    [Parameter] public ImmutableList<NavigationTreeItem>? TableOfContents { get; set; }
+    [Parameter] public HashSet<string>? HiddenSections { get; set; }
+
+    private static bool HasSelectedDescendant(NavigationTreeItem item)
+    {
+        if (item.IsSelected) return true;
+        return item.Items.Any(HasSelectedDescendant);
+    }
+
+    private bool IsHidden(NavigationTreeItem item)
+        => HiddenSections != null && HiddenSections.Contains(item.Name);
+
+    private NavigationTreeItem[] GetVisibleChildren(NavigationTreeItem item)
+        => item.Items.Where(child => !IsHidden(child)).OrderBy(i => i.Order).ToArray();
+
+    private RenderFragment RenderItem(NavigationTreeItem item, int depth) => builder =>
+    {
+        if (IsHidden(item)) return;
+
+        var visibleChildren = GetVisibleChildren(item);
+        var isSelected = item.IsSelected;
+        var hasChildren = visibleChildren.Length > 0;
+
+        if (hasChildren)
+        {
+            RenderCollapsibleGroup(builder, item, visibleChildren, depth);
+        }
+        else
+        {
+            RenderLeafItem(builder, item, depth);
+        }
+    };
+
+    private void RenderCollapsibleGroup(
+        Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder,
+        NavigationTreeItem item,
+        NavigationTreeItem[] visibleChildren,
+        int depth)
+    {
+        var shouldBeOpen = HasSelectedDescendant(item);
+        var isTopLevel = depth == 0;
+
+        // <li>
+        builder.OpenElement(0, "li");
+        builder.AddAttribute(1, "class", "block");
+
+        // <details open?>
+        builder.OpenElement(2, "details");
+        builder.AddAttribute(3, "class", "group/toc my-2");
+        builder.AddAttribute(4, "data-toc", true);
+        if (shouldBeOpen)
+        {
+            builder.AddAttribute(5, "open", true);
+        }
+
+        // <summary>
+        builder.OpenElement(6, "summary");
+
+        var summaryClass = isTopLevel
+            ? "flex items-center justify-between cursor-pointer list-none font-display font-semibold text-sm uppercase tracking-wider mt-6 first:mt-0 mb-1 select-none text-primary-700 dark:text-primary-300 [&::-webkit-details-marker]:hidden"
+            : "flex items-center justify-between cursor-pointer list-none text-sm py-1 select-none transition-colors text-base-500 dark:text-base-400 hover:text-primary-500 dark:hover:text-white [&::-webkit-details-marker]:hidden";
+
+        builder.AddAttribute(6, "class", summaryClass);
+
+        // Label (link or plain text)
+        if (item.Href != null)
+        {
+            builder.OpenElement(7, "a");
+            builder.AddAttribute(8, "href", item.Href);
+            builder.AddAttribute(9, "data-current", item.IsSelected.ToString().ToLowerInvariant());
+            var linkClass = item.IsSelected
+                ? "text-primary-700 dark:text-primary-200"
+                : "";
+            if (!string.IsNullOrEmpty(linkClass))
+            {
+                builder.AddAttribute(10, "class", linkClass);
+            }
+            builder.AddContent(11, item.Name);
+            builder.CloseElement(); // </a>
+        }
+        else
+        {
+            builder.OpenElement(7, "span");
+            builder.AddContent(8, item.Name);
+            builder.CloseElement(); // </span>
+        }
+
+        // Chevron
+        builder.OpenElement(12, "svg");
+        builder.AddAttribute(13, "class", "w-4 h-4 shrink-0 transition-transform duration-150 group-open/toc:rotate-90");
+        builder.AddAttribute(14, "data-toc-chevron", true);
+        builder.AddAttribute(15, "fill", "none");
+        builder.AddAttribute(16, "stroke", "currentColor");
+        builder.AddAttribute(17, "viewBox", "0 0 24 24");
+        builder.AddAttribute(18, "stroke-width", "2");
+        builder.OpenElement(19, "path");
+        builder.AddAttribute(20, "stroke-linecap", "round");
+        builder.AddAttribute(21, "stroke-linejoin", "round");
+        builder.AddAttribute(22, "d", "M9 5l7 7-7 7");
+        builder.CloseElement(); // </path>
+        builder.CloseElement(); // </svg>
+
+        builder.CloseElement(); // </summary>
+
+        // wrapper for animation
+        builder.OpenElement(23, "div");
+        builder.AddAttribute(24, "class", "grid grid-rows-[0fr] transition-[grid-template-rows] duration-150 group-open/toc:grid-rows-[1fr]");
+        builder.AddAttribute(25, "data-toc-content", true);
+
+        // <ul> children
+        builder.OpenElement(26, "ul");
+        var ulClass = isTopLevel ? "mt-1" : "ml-3 border-l border-base-300 dark:border-base-700";
+        builder.AddAttribute(27, "class", $"{ulClass} overflow-hidden");
+
+        foreach (var child in visibleChildren)
+        {
+            builder.AddContent(28, RenderItem(child, depth + 1));
+        }
+
+        builder.CloseElement(); // </ul>
+        builder.CloseElement(); // </div>
+        builder.CloseElement(); // </details>
+        builder.CloseElement(); // </li>
+    }
+
+    private static void RenderLeafItem(
+        Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder,
+        NavigationTreeItem item,
+        int depth)
+    {
+        if (item.Href == null) return;
+
+        var isNested = depth > 0;
+
+        builder.OpenElement(0, "li");
+        builder.AddAttribute(1, "class", "block");
+
+        builder.OpenElement(2, "a");
+        builder.AddAttribute(3, "href", item.Href);
+        builder.AddAttribute(4, "data-current", item.IsSelected.ToString().ToLowerInvariant());
+
+        var linkClass = isNested
+            ? "block text-sm border-l-2 pl-3 py-1 transition-colors duration-200 "
+              + (item.IsSelected
+                  ? "border-primary-500 text-primary-700 dark:text-primary-200"
+                  : "border-transparent text-base-500 dark:text-base-400 hover:text-primary-500 dark:hover:text-white")
+            : "block w-full py-1 text-sm transition-colors duration-200 "
+              + (item.IsSelected
+                  ? "text-primary-700 dark:text-primary-200"
+                  : "text-base-500 dark:text-base-400 hover:text-primary-500 dark:hover:text-white");
+
+        builder.AddAttribute(5, "class", linkClass);
+        builder.AddContent(6, item.Name);
+
+        builder.CloseElement(); // </a>
+        builder.CloseElement(); // </li>
+    }
+}

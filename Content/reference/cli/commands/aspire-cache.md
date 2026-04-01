@@ -1,0 +1,55 @@
+---
+title: aspire cache command
+description: Learn about the aspire cache command and its usage. This command driver is used to manage disk cache for Aspire CLI operations.
+order: 116
+---
+
+
+
+## Name
+
+`aspire cache` - Manage disk cache for CLI operations.
+
+## Synopsis
+
+```bash title="Aspire CLI"
+aspire cache [command] [options]
+```
+
+## Description
+
+The `aspire cache` command manages the disk cache used by the Aspire CLI for various operations. The CLI caches data such as downloaded templates, NuGet package information, and other temporary files to improve performance and reduce network requests.
+
+## Options
+
+The following options are available:
+
+- - - - - - ## Commands
+
+The following commands are available:
+
+| Command                                        | Status | Function                 |
+| ---------------------------------------------- | ------ | ------------------------ |
+| [`aspire cache clear`](/reference/cli/commands/aspire-cache-clear) | Stable | Clear all cache entries. |
+
+## Cache location
+
+The Aspire CLI stores cache data in a platform-specific location:
+
+- **Windows**: `%LOCALAPPDATA%\.aspire\cli\cache\`
+- **macOS/Linux**: `~/.aspire/cli/cache/`
+
+## When to clear cache
+
+You may want to clear the cache in the following scenarios:
+
+- After updating the Aspire CLI to ensure fresh data
+- When experiencing issues with template installation
+- To free up disk space
+- When NuGet package information appears outdated
+- When troubleshooting CLI behavior
+
+## See also
+
+- [aspire cache clear command](/reference/cli/commands/aspire-cache-clear)
+- [aspire config command](/reference/cli/commands/aspire-config)

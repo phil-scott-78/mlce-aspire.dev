@@ -1,0 +1,103 @@
+---
+title: Get started with the Oracle integrations
+description: Learn how to set up the Aspire Oracle Hosting and Client integrations simply.
+order: 288
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/oracle-icon.svg" Alt="Oracle Database logo">
+
+[Oracle Database](https://www.oracle.com/database/technologies/) is a widely-used relational database management system owned and developed by Oracle. The Aspire Oracle integration enables you to connect to existing Oracle servers or create new servers from Aspire with the [`container-registry.oracle.com/database/free` container image](https://container-registry.oracle.com/).
+</IntegrationIcon>
+
+In this introduction, you'll see how to install and use the Aspire Oracle integrations in a simple configuration. If you already have this knowledge, see [Oracle Hosting integration](/integrations/databases/efcore/oracle/oracle-host) for full reference details.
+
+> [!NOTE]
+> To follow this guide, you must have created an Aspire solution to work with. To learn how to do that, see [Build your first Aspire app](/docs/get-started/first-app).
+
+## Set up hosting integration
+
+To begin, install the Aspire Oracle Hosting integration in your Aspire AppHost project. This integration allows you to create and manage Oracle database instances from your Aspire hosting projects:
+
+<InstallPackage packageName="Aspire.Hosting.Oracle" shortName="oracle" />
+
+Next, in the AppHost project, create instances of Oracle server and database resources, then pass the database to the consuming client projects:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var oracle = builder.AddOracle("oracle")
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var oracledb = oracle.AddDatabase("oracledb");
+
+var exampleProject = builder.AddProject<Projects.ExampleProject>("apiservice")
+                            .WaitFor(oracledb)
+                            .WithReference(oracledb);
+```
+
+> [!TIP]
+> This is the simplest implementation of Oracle resources in the AppHost. There are many more options you can choose from to address your requirements. For full details, see [Oracle Hosting integration](/integrations/databases/efcore/oracle/oracle-host).
+
+## Use the integration in client projects
+
+Now that the hosting integration is ready, the next step is to install and configure the client integration in any projects that need to use it.
+
+### Set up client projects
+
+In each of these consuming client projects, install the Aspire Oracle Entity Framework Core client integration:
+
+<InstallPackage PackageName="Aspire.Oracle.EntityFrameworkCore" />
+
+In the `Program.cs` file of your client-consuming project, call the `AddOracleDatabaseDbContext` extension method on any `IHostApplicationBuilder` to register a `DbContext` for use via the dependency injection container. The method takes a connection name parameter.
+
+```csharp title="C# — Program.cs"
+builder.AddOracleDatabaseDbContext<ExampleDbContext>(connectionName: "oracledb");
+```
+
+> [!TIP]
+> The `connectionName` parameter must match the name used when adding the Oracle database resource in the AppHost project. For more information, see [Set up hosting integration](#set-up-hosting-integration).
+
+### Use injected Oracle properties
+
+In the AppHost, when you used the `WithReference` method to pass an Oracle database resource to a consuming client project, Aspire injects several configuration properties that you can use in the consuming project.
+
+Aspire exposes each property as an environment variable named `[RESOURCE]_[PROPERTY]`. For instance, the `Uri` property of a resource called `oracledb` becomes `ORACLEDB_URI`.
+
+Use the `GetValue()` method to obtain these environment variables in consuming projects:
+
+```csharp title="C# - Obtain configuration properties"
+string oracleHost = builder.Configuration.GetValue<string>("ORACLEDB_HOST");
+string oraclePort = builder.Configuration.GetValue<string>("ORACLEDB_PORT");
+string oracleJDBCConnectionString = builder.Configuration.GetValue<string>("ORACLEDB_JDBCCONNECTIONSTRING");
+```
+
+> [!TIP]
+> The full set of properties that Aspire injects depends on the Oracle resource configuration. For more information, see [Properties of the Oracle resources](/integrations/databases/efcore/oracle/oracle-client/#properties-of-the-oracle-resources).
+
+### Use Oracle resources in client code
+
+Now that you've added `DbContext` to the builder in the consuming project, you can use the Oracle database to get and store data. Get the `DbContext` instance using dependency injection. For example, to retrieve your context object from an example service define it as a constructor parameter and ensure the `ExampleService` class is registered with the dependency injection container:
+
+```csharp title="C# — ExampleService.cs"
+public class ExampleService(ExampleDbContext context)
+{
+    // Use database context...
+}
+```
+
+Having obtained the context, you can work with the Oracle database using Entity Framework Core as you would in any other C# application.
+
+## Next steps
+
+Now that you have an Aspire app with Oracle integrations up and running, you can use the following reference documents to learn how to configure and interact with the Oracle resources:
+
+<CardGrid>
+  <LinkCard Title="Understand the Oracle hosting integration"
+    
+    Href="/integrations/databases/efcore/oracle/oracle-host">Discover how to configure database scripts, data volumes, and more.</LinkCard>
+  <LinkCard Title="Understand the Oracle client integration"
+    
+    Href="/integrations/databases/efcore/oracle/oracle-client">Learn about the Oracle client integration, including connection strings and observability.</LinkCard>
+</CardGrid>

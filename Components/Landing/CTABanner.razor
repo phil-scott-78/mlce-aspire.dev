@@ -1,0 +1,32 @@
+<section class="relative overflow-hidden rounded-xl py-10 px-8 my-10 text-center bg-gradient-to-br from-primary-700/10 via-primary-500/5 to-accent-500/3 border border-primary-500/12">
+    <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_50%,_var(--color-primary-500)_0%,_transparent_50%)] opacity-5"></div>
+    <div class="relative z-10 max-w-xl mx-auto">
+        <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold mb-3 text-base-900 dark:text-base-100 leading-tight">@Title</h2>
+        <p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-6">@Description</p>
+        @if (PrimaryCta != null || SecondaryCta != null)
+        {
+            <div class="flex flex-wrap gap-3 justify-center">
+                @if (PrimaryCta != null)
+                {
+                    <a href="@PrimaryCta.Value.Href" class="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-lg font-semibold text-sm no-underline transition-all whitespace-nowrap cursor-pointer bg-primary-500 text-white hover:bg-primary-700 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-base-900 focus-visible:outline-offset-2">
+                        @PrimaryCta.Value.Label
+                        <SvgIcon Name="right-arrow" Size="16" />
+                    </a>
+                }
+                @if (SecondaryCta != null)
+                {
+                    <a href="@SecondaryCta.Value.Href" class="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-lg font-semibold text-sm no-underline transition-all whitespace-nowrap cursor-pointer text-base-900 dark:text-base-100 border border-base-900/25 dark:border-base-100/25 bg-base-900/5 dark:bg-base-100/5 hover:bg-base-900/12 hover:border-base-900/40 dark:hover:bg-base-100/12 dark:hover:border-base-100/40 focus-visible:outline-2 focus-visible:outline-base-900 focus-visible:outline-offset-2">
+                        @SecondaryCta.Value.Label
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Description { get; set; } = "";
+    [Parameter] public (string Label, string Href)? PrimaryCta { get; set; }
+    [Parameter] public (string Label, string Href)? SecondaryCta { get; set; }
+}

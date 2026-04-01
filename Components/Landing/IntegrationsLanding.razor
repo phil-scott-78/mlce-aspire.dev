@@ -1,0 +1,62 @@
+<PageTitle>Aspire Integrations - Aspire</PageTitle>
+<HeadContent>
+    <meta name="description" content="Connect your distributed applications to 150+ services — databases, caches, messaging, cloud platforms, and more — with a single line in your AppHost." />
+</HeadContent>
+
+<TopicHero
+    Icon="puzzle"
+    Title="Plug in anything."
+    Highlight="Ship faster."
+    Subtitle="Snap databases, caches, messaging, and cloud services into your AppHost with one line — health checks, telemetry, and resiliency included."
+    Accent="green"
+    FloatingIcons="@(new[] { "database", "check-circle", "random", "cloud-download", "setting" })"
+    PrimaryCta="@(("Browse integrations", "/integrations/gallery/"))"
+    SecondaryCta="@(("What are integrations?", "/integrations/overview/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Two halves, one story</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Most integrations have two sides: a <strong>hosting integration</strong> that models a resource in your AppHost, and a <strong>client integration</strong> that wires up the client library in your consuming project. They work together seamlessly — but can also be used independently.</p>
+
+<CapabilityGrid Columns="2" Capabilities="@_twoHalves" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">What you can connect</h2>
+
+<CapabilityGrid Columns="3" Capabilities="@_whatYouCanConnect" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Built-in superpowers</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Every client integration inherits a set of standardized capabilities from Service Defaults — you get production-grade behavior for free.</p>
+
+<FeatureShowcase Features="@_superpowers" />
+
+<CTABanner
+    Title="Find the right integration"
+    Description="Search and filter 150+ integrations by name, tag, or category. The gallery has everything you need to connect your app to the world."
+    PrimaryCta="@(("Browse the gallery", "/integrations/gallery/"))"
+    SecondaryCta="@(("Read the overview", "/integrations/overview/"))" />
+
+<SectionNavigation Previous="@(("Docs", "/docs/"))" Next="@(("Dashboard", "/dashboard/"))" />
+
+@code {
+    private static readonly List<CapabilityItem> _twoHalves =
+    [
+        new("setting", "Hosting integrations", "Model containers, cloud resources, and executables in your AppHost. Aspire provisions, configures, and connects them automatically at dev time.", "/integrations/overview/#hosting-integrations"),
+        new("laptop", "Client integrations", "Wire up client libraries with dependency injection, health checks, resiliency, and OpenTelemetry — all from a single extension method call.", "/integrations/overview/#client-integrations"),
+    ];
+
+    private static readonly List<CapabilityItem> _whatYouCanConnect =
+    [
+        new("database", "Databases", "PostgreSQL, SQL Server, MySQL, MongoDB, Oracle, Cosmos DB, and more — with full connection string management.", "/integrations/gallery/?search=database"),
+        new("rocket", "Caching", "Redis, Valkey, Garnet, and hybrid caching solutions for high-performance data access patterns.", "/integrations/gallery/?search=caching"),
+        new("comment-alt", "Messaging", "RabbitMQ, Azure Service Bus, Kafka, NATS, and other message brokers for event-driven architectures.", "/integrations/gallery/?search=messaging"),
+        new("cloud-download", "Cloud services", "Azure, AWS, and GCP services including storage, AI, search, and identity — with local emulator support.", "/integrations/gallery/?search=cloud"),
+        new("magnifier", "Observability", "OpenTelemetry, Seq, Grafana, and other platforms for logging, tracing, and metrics collection.", "/integrations/gallery/?search=observability"),
+        new("random", "Frameworks & more", "Node.js, Python, Go, Java, reverse proxies, and developer tooling — Aspire is multi-language by design.", "/integrations/gallery/?search=framework"),
+    ];
+
+    private static readonly List<FeatureItem> _superpowers =
+    [
+        new("check-circle", "Health checks", "Automatic HTTP health endpoints let orchestrators, load balancers, and the Aspire Dashboard monitor resource availability in real time.", "/integrations/overview/#integration-features", "Learn more", "green"),
+        new("random", "Resiliency", "Built-in retry policies, circuit breakers, and timeouts help your application recover gracefully from transient failures.", "/integrations/overview/#integration-features", "Learn more", "blue"),
+        new("bars", "OpenTelemetry", "Traces, metrics, and structured logs are wired up automatically — giving you full observability with zero configuration.", "/integrations/overview/#integration-features", "Learn more", "purple"),
+        new("puzzle", "Extensible", "Build your own hosting or client integrations to model any resource. The integration system is fully open and composable.", "/integrations/custom-integrations/hosting-integrations/", "Build your own", "orange"),
+    ];
+}

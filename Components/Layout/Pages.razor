@@ -1,0 +1,29 @@
+@page "/{fileName:nonfile}"
+@inject ContentEngineOptions ContentEngineOptions
+@inject IMarkdownContentService<AspireFrontMatter> MarkdownContentService
+@inject ITableOfContentService TableOfContentService
+
+<SectionPage Title="@_post?.FrontMatter.Title" Description="@_post?.FrontMatter.Description"
+             HtmlContent="@_htmlContent" NavInfo="_navInfo"
+             PreviousPage="_navInfo?.PreviousPage" NextPage="_navInfo?.NextPage"
+             SiteTitle="@ContentEngineOptions.SiteTitle" />
+
+@code {
+    private MarkdownContentPage<AspireFrontMatter>? _post;
+    private string? _htmlContent;
+    private NavigationInfo? _navInfo;
+
+    [Parameter] public string? FileName { get; init; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fileName = string.IsNullOrWhiteSpace(FileName) ? "index" : FileName;
+
+        var page = await MarkdownContentService.GetRenderedContentPageByUrlOrDefault(fileName);
+        if (page == null) return;
+
+        _post = page.Value.Page;
+        _htmlContent = page.Value.HtmlContent;
+        _navInfo = await TableOfContentService.GetNavigationInfoAsync(_post.Url);
+    }
+}

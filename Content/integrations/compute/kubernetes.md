@@ -1,0 +1,68 @@
+---
+title: Kubernetes integration
+description: Learn how to add Kubernetes resources to your Aspire application.
+order: 266
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/kubernetes.svg" Alt="Kubernetes logo">
+
+The Aspire Kubernetes hosting integration enables you to generate Kubernetes deployment manifests from your Aspire application model. This integration allows you to define your application's infrastructure and deployment configuration using the familiar Aspire AppHost and then publish it as Kubernetes YAML manifests for deployment to any Kubernetes cluster.
+</IntegrationIcon>
+
+## Hosting integration
+
+To get started with the Aspire Kubernetes hosting integration, install the [📦 Aspire.Hosting.Kubernetes](https://www.nuget.org/packages/Aspire.Hosting.Kubernetes) NuGet package in the AppHost project:
+
+<InstallPackage PackageName="Aspire.Hosting.Kubernetes" />
+
+## Add Kubernetes environment
+
+After installing the package, add a Kubernetes environment to your AppHost project using the `AddKubernetesEnvironment` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var k8s = builder.AddKubernetesEnvironment("k8s");
+
+var api = builder.AddProject<Projects.MyApi>("api");
+
+builder.Build().Run();
+```
+
+> [!TIP]
+> With the `k8s` variable assigned, you can pass that to the
+>   `WithComputeEnvironment` API to disambiguate compute resources for solutions
+>   that define more than one. Otherwise, the `k8s` variable isn't required.
+
+## Configure Kubernetes environment properties
+
+You can customize the Kubernetes environment using the `WithProperties` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.MyApi>("api");
+
+builder.AddKubernetesEnvironment("k8s")
+       .WithProperties(k8s =>
+       {
+           k8s.HelmChartName = "my-aspire-app";
+       });
+
+builder.Build().Run();
+```
+
+The `WithProperties` method allows you to configure various aspects of the Kubernetes deployment, including the Helm chart name that will be used for generating the Kubernetes resources.
+
+## Publishing and deployment
+
+For a complete guide on generating Kubernetes Helm charts, deploying with Helm, resource mappings, and troubleshooting — see [Deploy to Kubernetes](/deployment/kubernetes).
+
+## See also
+
+- [Deploy to Kubernetes](/deployment/kubernetes)
+- [Aspire GitHub repo](https://github.com/microsoft/aspire)
+- [Kubernetes documentation](https://kubernetes.io/docs/)
+- [Helm documentation](https://helm.sh/docs/)

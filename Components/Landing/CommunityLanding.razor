@@ -1,0 +1,62 @@
+<PageTitle>Aspire Community - Aspire</PageTitle>
+<HeadContent>
+    <meta name="description" content="Connect with the Aspire team and community across social channels, streams, and contribution platforms." />
+</HeadContent>
+
+<TopicHero
+    Icon="heart"
+    Title="Built together,"
+    Highlight="in the open."
+    Subtitle="Join thousands of developers building, contributing, and learning together across social channels, live streams, and open-source repos."
+    Accent="magenta"
+    FloatingIcons="@(new[] { "github", "comment-alt", "pencil", "discord", "add-document" })"
+    PrimaryCta="@(("Start contributing", "/community/contributor-guide/"))"
+    SecondaryCta="@(("Watch videos", "/community/videos/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Connect with us</h2>
+
+<CapabilityGrid Columns="2" Capabilities="@_connectChannels" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Watch and learn</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Catch up on the latest videos from the Aspire team and community. From deep-dive demos to conference talks, there's a wealth of content to explore.</p>
+
+<CapabilityGrid Columns="2" Capabilities="@_watchAndLearn" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Get involved</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Whether you're fixing a typo, building an integration, or translating docs — every contribution makes Aspire better for everyone.</p>
+
+<FeatureShowcase Features="@_getInvolved" />
+
+<CTABanner
+    Title="Ready to be part of it?"
+    Description="Aspire is open source and community driven. Whether you code, write docs, or spread the word — there's a place for you."
+    PrimaryCta="@(("Read the contributor guide", "/community/contributor-guide/"))"
+    SecondaryCta="@(("Join Discord", "https://discord.com/invite/raNPcaaSj8"))" />
+
+<SectionNavigation Previous="@(("Reference", "/reference/"))" />
+
+@code {
+    private static readonly List<CapabilityItem> _connectChannels =
+    [
+        new("discord", "Join us on Discord", "Chat with the team and community members, ask questions, and share feedback in real time.", "https://discord.com/invite/raNPcaaSj8"),
+        new("document", "Read our blog", "Get release updates, announcements, and deep dives from the Aspire engineering team.", "https://devblogs.microsoft.com/aspire"),
+        new("bluesky", "Follow us on BlueSky", "See community highlights, quick tips, and follow the latest Aspire news and releases.", "https://bsky.app/profile/aspire.dev"),
+        new("x-twitter", "Follow us on X", "Keep up with announcements, clips, and quick updates from the team and community.", "https://x.com/aspiredotdev"),
+        new("youtube", "Watch us on YouTube", "Catch Aspire sessions, deep-dive demos, conference talks, and livestream replays.", "https://youtube.com/@aspiredotdev"),
+        new("twitch", "Watch us on Twitch", "Join live community streams, pair-programming sessions, and interact with us in real time.", "https://twitch.tv/aspiredotdev"),
+    ];
+
+    private static readonly List<CapabilityItem> _watchAndLearn =
+    [
+        new("youtube", "YouTube channel", "Watch the latest deep dives, conference talks, and community streams on the official Aspire YouTube channel.", "https://youtube.com/@aspiredotdev"),
+        new("twitch", "Twitch streams", "Join live community streams and pair-programming sessions. Interact with the team in real time.", "https://twitch.tv/aspiredotdev"),
+    ];
+
+    private static readonly List<FeatureItem> _getInvolved =
+    [
+        new("github", "Contribute to Aspire", "Help improve the core Aspire project with code, issues, and ideas. The runtime, integrations, and tooling are all open source.", "https://github.com/microsoft/aspire", "View on GitHub", "purple"),
+        new("pencil", "Contribute to aspire.dev", "Improve docs, guides, and examples on this very site. Start with the contributor guide to set up your environment.", "/community/contributor-guide/", "Contributor guide", "blue"),
+        new("translate", "Help translate", "Aspire docs are available in 16+ languages. Help make Aspire accessible to developers around the world.", "/community/translation-guide/", "Translation guide", "green"),
+        new("star", "Meet the contributors", "See who is building Aspire. Browse the contributor list and discover the people behind the project.", "/community/contributors/", "View contributors", "orange"),
+    ];
+}

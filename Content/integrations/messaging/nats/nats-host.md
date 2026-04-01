@@ -1,0 +1,88 @@
+---
+title: NATS hosting integration
+description: Learn how to use the NATS hosting integration to add a NATS resource to your AppHost.
+order: 355
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/nats-icon.png" Alt="NATS logo">
+
+To get started with the Aspire NATS hosting integration, install the [Aspire.Hosting.Nats](https://www.nuget.org/packages/Aspire.Hosting.Nats) NuGet package in the app host project.
+</IntegrationIcon>
+
+<InstallPackage PackageName="Aspire.Hosting.Nats" />
+
+## Add NATS resource
+
+In your app host project, register and consume a NATS server integration using the `AddNats` extension method to add the NATS server resource to the builder:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var nats = builder.AddNats("nats");
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(nats);
+
+// After adding all resources, run the app...
+```
+
+## Add NATS with JetStream
+
+To add NATS with [JetStream](https://docs.nats.io/nats-concepts/jetstream) enabled, which provides streaming capabilities, use the `WithJetStream` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var nats = builder.AddNats("nats")
+                  .WithJetStream();
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(nats);
+```
+
+## Data persistence
+
+To add data volumes for persisting NATS data, call the `WithDataVolume` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var nats = builder.AddNats("nats")
+                  .WithJetStream()
+                  .WithDataVolume();
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(nats);
+```
+
+The data volume is used to persist the NATS data outside the lifecycle of the container.
+
+For development scenarios, you may want to use bind mounts instead of data volumes. To add a data bind mount, call the `WithDataBindMount` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var nats = builder.AddNats("nats")
+                  .WithJetStream()
+                  .WithDataBindMount(source: @"C:\Nats\Data");
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(nats);
+```
+
+## Add NATS with authentication
+
+To add NATS with username and password authentication, use the `WithNatsUser` and `WithNatsPassword` parameters:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var user = builder.AddParameter("natsUser");
+var pass = builder.AddParameter("natsPass", secret: true);
+var nats = builder.AddNats("nats", userName: user, password: pass);
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(nats);
+```

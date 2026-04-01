@@ -1,0 +1,93 @@
+@* Shared rendering logic for all section pages. *@
+@* Callers set the post/nav data via parameters. *@
+
+@if (Title != null && HtmlContent != null)
+{
+    <PageTitle>@Title - @SiteTitle</PageTitle>
+    <HeadContent>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <meta name="description" content="@Description" />
+            <meta property="og:description" content="@Description" />
+        }
+        <meta property="og:title" content="@Title" />
+    </HeadContent>
+
+    @* Breadcrumbs *@
+    @if (NavInfo?.Breadcrumbs is { Count: > 0 })
+    {
+        <nav class="text-sm mb-4 text-base-500 dark:text-base-400">
+            @foreach (var (crumb, i) in NavInfo.Breadcrumbs.Select((c, i) => (c, i)))
+            {
+                if (i > 0)
+                {
+                    <span class="mx-1.5">/</span>
+                }
+                @if (!string.IsNullOrEmpty(crumb.Href))
+                {
+                    <a href="@crumb.Href" class="hover:text-primary-500 dark:hover:text-primary-300">@crumb.Name</a>
+                }
+                else
+                {
+                    <span>@crumb.Name</span>
+                }
+            }
+        </nav>
+    }
+
+    <h1 class="font-display text-3xl lg:text-4xl font-bold mb-6 text-base-950 dark:text-white">@Title</h1>
+
+    <div class="prose dark:prose-invert max-w-none">
+        @((MarkupString)HtmlContent)
+    </div>
+
+    @* Prev/Next navigation *@
+    @if (PreviousPage != null || NextPage != null)
+    {
+        <div class="flex justify-between gap-4 mt-12 pt-8 border-t border-base-300 dark:border-base-700">
+            @if (PreviousPage != null)
+            {
+                <a href="@PreviousPage.Href" class="group flex flex-col text-sm rounded-lg border border-base-300 dark:border-base-700 p-4 hover:border-primary-500 dark:hover:border-primary-500 transition-colors flex-1">
+                    <span class="text-base-500 dark:text-base-400 text-xs uppercase tracking-wide">Previous</span>
+                    <span class="font-semibold text-primary-500 dark:text-primary-300 group-hover:text-primary-700 dark:group-hover:text-white">@PreviousPage.Name</span>
+                </a>
+            }
+            else
+            {
+                <div></div>
+            }
+            @if (NextPage != null)
+            {
+                <a href="@NextPage.Href" class="group flex flex-col items-end text-sm rounded-lg border border-base-300 dark:border-base-700 p-4 hover:border-primary-500 dark:hover:border-primary-500 transition-colors flex-1">
+                    <span class="text-base-500 dark:text-base-400 text-xs uppercase tracking-wide">Next</span>
+                    <span class="font-semibold text-primary-500 dark:text-primary-300 group-hover:text-primary-700 dark:group-hover:text-white">@NextPage.Name</span>
+                </a>
+            }
+        </div>
+    }
+}
+else
+{
+    <PageTitle>@SiteTitle</PageTitle>
+    <p class="text-base-500 dark:text-base-400 mt-8">Page not found.</p>
+}
+
+<SectionContent SectionName="outline">
+    <OutlineNavigation ContentSelector=".prose.max-w-none"
+        Title="On this page"
+        ContainerStructureClass="border-l border-base-300 dark:border-base-700"
+        ListStructureClass="list-none pl-4"
+        ListColorClass="text-base-500 dark:text-base-400"
+        OutlineLinkColorClass="transition-colors duration-200 py-1 hover:text-primary-500 dark:hover:text-white data-[selected=true]:text-primary-700 dark:data-[selected=true]:text-primary-200"
+        OutlineLinkStructureClass="py-1 ml-[calc(-1*(4em-1px))] pl-[calc(4em+1px)]" />
+</SectionContent>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? HtmlContent { get; set; }
+    [Parameter] public NavigationInfo? NavInfo { get; set; }
+    [Parameter] public NavigationTreeItem? PreviousPage { get; set; }
+    [Parameter] public NavigationTreeItem? NextPage { get; set; }
+    [Parameter] public string SiteTitle { get; set; } = "Aspire";
+}

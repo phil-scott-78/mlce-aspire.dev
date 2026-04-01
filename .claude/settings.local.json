@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(dotnet build:*)",
+      "Bash(find:*)",
+      "Bash(dotnet run:*)",
+      "Bash(MSYS_NO_PATHCONV=1 dotnet run -- build)",
+      "Bash(MSYS_NO_PATHCONV=1 dotnet run -- build /mlce-aspire.dev/)",
+      "Bash(xargs sed:*)",
+      "Bash(grep -v ':0$')",
+      "Bash(dotnet test:*)"
+    ]
+  }
+}

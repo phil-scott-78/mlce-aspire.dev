@@ -1,0 +1,121 @@
+---
+title: aspire doctor command
+description: Learn about the aspire doctor command and its usage. This command diagnoses Aspire environment issues and verifies setup.
+order: 133
+---
+
+
+
+## Name
+
+`aspire doctor` - Check the Aspire development environment for common issues.
+
+## Synopsis
+
+```bash title="Aspire CLI"
+aspire doctor [options]
+```
+
+## Description
+
+The `aspire doctor` command runs a series of diagnostic checks to verify that your development environment is properly configured for Aspire development. It checks prerequisites such as the .NET SDK, container runtime, and environment settings.
+
+> [!NOTE]
+> The `aspire doctor` command replaces the hidden `aspire setup` command. If you
+>   previously used `aspire setup` or `aspire setup --force`, use `aspire doctor`
+>   instead. The `aspire setup` command is still available for backward
+>   compatibility but is hidden from help output.
+
+This command is useful for troubleshooting when you encounter issues with Aspire or when setting up a new development environment. The checks are grouped by category:
+
+- **SDK checks**: Verifies .NET SDK installation and version requirements
+- **Container checks**: Validates container runtime (Docker/Podman) availability and configuration
+- **Environment checks**: Validates environment variables and other settings
+
+The command displays results with clear status indicators:
+
+- ✓ (green) - Check passed
+- ⚠ (yellow) - Warning (non-blocking issue)
+- ✗ (red) - Check failed (blocking issue)
+
+If any checks fail, the command provides suggestions for how to fix the issues and links to relevant documentation.
+
+## Options
+
+The following options are available:
+
+- **`--format <Table|Json>`**
+
+  Output format (Table or Json). Use `Json` for automation scenarios or when you need to parse the results programmatically. Defaults to `Table`.
+
+- - - - - - ## Examples
+
+- Run diagnostic checks on your development environment:
+
+  ```bash title="Aspire CLI"
+  aspire doctor
+  ```
+
+- Run diagnostic checks with JSON output:
+
+  ```bash title="Aspire CLI"
+  aspire doctor --format Json
+  ```
+
+## Sample output
+
+When you run `aspire doctor`, you see output similar to the following:
+
+```bash title="Aspire CLI"
+Environment Check
+=================
+
+SDK
+✓  .NET SDK 10.0.100 or later is installed
+✓  Aspire templates are available
+
+Container Runtime
+✓  Docker is installed and running
+✓  Docker Compose is available
+
+Environment
+✓  ASPNETCORE_ENVIRONMENT is set correctly
+
+Summary: 5 passed, 0 warnings, 0 failed
+```
+
+## Exit codes
+
+The command returns the following exit codes:
+
+| Exit code | Description                              |
+| --------- | ---------------------------------------- |
+| `0`       | All checks passed (warnings are allowed) |
+| `1`       | One or more checks failed                |
+
+## JSON output format
+
+When using the `--format Json` option, the output includes a structured response with all check results and a summary:
+
+```json
+{
+  "checks": [
+    {
+      "category": "sdk",
+      "message": ".NET SDK 10.0.100 or later is installed",
+      "status": "Pass"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "warnings": 0,
+    "failed": 0
+  }
+}
+```
+
+## See also
+
+- [aspire command](/reference/cli/commands/aspire)
+- [aspire run command](/reference/cli/commands/aspire-run)
+- [Aspire CLI overview](../../overview/)

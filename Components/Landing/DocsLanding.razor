@@ -1,0 +1,45 @@
+<PageTitle>Welcome to Aspire - Aspire</PageTitle>
+<HeadContent>
+    <meta name="description" content="Learn how Aspire simplifies the development, deployment, and debugging of distributed applications." />
+</HeadContent>
+
+<HeroSection
+    Title="Build distributed apps"
+    Highlight="without the complexity."
+    Subtitle="Aspire gives you a unified, code-first toolkit to compose, debug, and deploy distributed apps and agents — all from a single AppHost."
+    PrimaryCta="@(("Get started", "/docs/get-started/first-app/"))"
+    SecondaryCta="@(("What is Aspire?", "/docs/fundamentals/core-concepts/what-is-aspire/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Quick start</h2>
+
+<QuickStartJourney Steps="@_quickStartSteps" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Explore key concepts</h2>
+
+<FeatureShowcase Features="@_keyConcepts" />
+
+<CTABanner
+    Title="Ready to simplify your stack?"
+    Description="Join thousands of developers building production-grade distributed apps with less code, fewer tools, and more confidence."
+    PrimaryCta="@(("Start your first project", "/docs/get-started/first-app/"))"
+    SecondaryCta="@(("Browse integrations", "/integrations/"))" />
+
+<SectionNavigation Next="@(("Integrations", "/integrations/"))" />
+
+@code {
+    private static readonly List<JourneyStep> _quickStartSteps =
+    [
+        new("setting", "Check prerequisites", "Ensure you have the required SDK, container runtime, and tooling installed on your machine.", "/docs/get-started/setup-and-tooling/prerequisites/", "View prerequisites"),
+        new("terminal", "Install the Aspire CLI", "Get the command-line tooling that scaffolds, runs, and manages your Aspire projects.", "/docs/get-started/setup-and-tooling/install-cli/", "Install now"),
+        new("json", "Build your first app", "Follow the quickstart to create a multi-service application wired up with a database in minutes.", "/docs/get-started/first-app/", "Start building"),
+        new("rocket", "Deploy your app", "Ship to Azure, Kubernetes, or any cloud. Your local dev topology translates directly to production.", "/docs/get-started/deploy-first-app/", "Deploy now"),
+    ];
+
+    private static readonly List<FeatureItem> _keyConcepts =
+    [
+        new("open-book", "What is Aspire?", "Discover why Aspire is the fastest way to build production-ready cloud applications — unified tooling that eliminates complexity.", "/docs/fundamentals/core-concepts/what-is-aspire/", "Aspire explained", "purple"),
+        new("config", "The AppHost", "Define your entire app architecture in code — C#, TypeScript, and more. No YAML, no configuration drift — just code that describes services and dependencies.", "/docs/fundamentals/core-concepts/app-host/", "See how it works", "blue"),
+        new("puzzle", "Understanding resources", "Stop writing boilerplate connection strings. Aspire resources automatically wire up services, databases, caching, and cloud integrations.", "/docs/fundamentals/core-concepts/resources/", "Learn resource modeling", "green"),
+        new("rocket", "Deployment & topology", "Deploy anywhere with confidence. Your local dev setup automatically translates to Docker, Kubernetes, Azure, or any cloud provider.", "/deployment/pipelines/", "Deploy all the things", "orange"),
+    ];
+}

@@ -1,0 +1,150 @@
+---
+title: Node.js hosting extensions
+order: 344
+---
+
+
+
+<Badge text="⭐ Community Toolkit" size="small" />
+
+The Aspire Community Toolkit Node.js hosting extensions package provides extra functionality to the [Aspire.Hosting.JavaScript](https://www.nuget.org/packages/Aspire.Hosting.JavaScript) hosting package.
+
+> [!CAUTION] Package rename
+> In Aspire 13.0, `Aspire.Hosting.NodeJs` was renamed to
+> [`Aspire.Hosting.JavaScript`](/integrations/frameworks/javascript).
+> 
+> Use `Aspire.Hosting.JavaScript` for Aspire 13+ applications.
+> `Aspire.Hosting.NodeJs` is the old package name.
+
+This package provides the following features:
+
+- Running [Vite](https://vitejs.dev/) applications
+- Running Node.js applications using [Yarn](https://yarnpkg.com/) and [pnpm](https://pnpm.io/)
+- Ensuring that packages are installed before running the application (using the specified package manager)
+
+## Hosting integration
+
+To get started with the Aspire Community Toolkit Node.js hosting extensions, install the [CommunityToolkit.Aspire.Hosting.NodeJS.Extensions](https://www.nuget.org/packages/CommunityToolkit.Aspire.Hosting.NodeJS.Extensions) NuGet package in the app host project.
+
+<InstallPackage PackageName="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" />
+
+## Run specific package managers
+
+This integration extension adds support for running Node.js applications using Yarn or pnpm as the package manager.
+
+### Yarn
+
+To add a Node.js application using Yarn, use the `AddYarnApp` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var yarnApp = builder.AddYarnApp("yarn-demo")
+                     .WithExternalHttpEndpoints();
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(yarnApp);
+
+// After adding all resources, run the app...
+```
+
+### pnpm
+
+To add a Node.js application using pnpm, use the `AddPnpmApp` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var pnpmApp = builder.AddPnpmApp("pnpm-demo")
+                     .WithExternalHttpEndpoints();
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(pnpmApp);
+
+// After adding all resources, run the app...
+```
+
+## Run Vite apps
+
+This integration extension adds support for running the development server for Vite applications. By default, it uses the `npm` package manager to launch, but this can be overridden with the `packageManager` argument.
+
+### Using npm (default)
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var viteApp = builder.AddViteApp("vite-demo")
+                     .WithExternalHttpEndpoints();
+
+// After adding all resources, run the app...
+```
+
+### Using Yarn
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var viteApp = builder.AddViteApp("yarn-demo", packageManager: "yarn")
+                     .WithExternalHttpEndpoints();
+
+// After adding all resources, run the app...
+```
+
+### Using pnpm
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var viteApp = builder.AddViteApp("pnpm-demo", packageManager: "pnpm")
+                     .WithExternalHttpEndpoints();
+
+// After adding all resources, run the app...
+```
+
+## Install packages
+
+When using the `WithNpmPackageInstallation`, `WithYarnPackageInstallation`, or `WithPnpmPackageInstallation` methods, the package manager is used to install the packages before starting the application. These methods are useful to ensure that packages are installed before the application starts, similar to how a C# application would restore NuGet packages before running.
+
+### npm
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var nodeApp = builder.AddNodeApp("node-demo", "server.js")
+                     .WithNpmPackageInstallation();
+
+// After adding all resources, run the app...
+```
+
+### Yarn
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var yarnApp = builder.AddYarnApp("yarn-demo")
+                     .WithYarnPackageInstallation();
+
+// After adding all resources, run the app...
+```
+
+### pnpm
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var pnpmApp = builder.AddPnpmApp("pnpm-demo")
+                     .WithPnpmPackageInstallation();
+
+// After adding all resources, run the app...
+```
+
+## See also
+
+- [Orchestrate Node.js apps in Aspire](/docs/get-started/setup-and-tooling/prerequisites)
+- [Node.js integration](/integrations/frameworks/javascript)
+- [Vite documentation](https://vitejs.dev/)
+- [Yarn documentation](https://yarnpkg.com/)
+- [pnpm documentation](https://pnpm.io/)
+- [Aspire Community Toolkit](https://github.com/CommunityToolkit/Aspire)
+- [Aspire integrations overview](/integrations/overview)
+- [Aspire GitHub repo](https://github.com/microsoft/aspire)

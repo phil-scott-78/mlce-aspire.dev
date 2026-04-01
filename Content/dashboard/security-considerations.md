@@ -1,0 +1,88 @@
+---
+title: Aspire dashboard security considerations
+description: Security considerations for running the Aspire dashboard
+order: 81
+---
+
+
+
+The [Aspire dashboard](/dashboard/overview) offers powerful insights to your apps. The dashboard displays information about resources, including their configuration, console logs and in-depth telemetry.
+
+Data displayed in the dashboard can be sensitive. For example, configuration can include secrets in environment variables, and telemetry can include sensitive runtime data. Care should be taken to secure access to the dashboard.
+
+## Scenarios for running the dashboard
+
+The dashboard can be run in different scenarios, such as being automatically starting by Aspire tooling, or as a standalone application that is separate from other Aspire integrations. Steps to secure the dashboard depend on how it's being run.
+
+### Aspire tooling
+
+The dashboard is automatically started when an Aspire AppHost is run. The dashboard is secure by default when run from Aspire tooling:
+
+- Transport is secured with HTTPS. Using HTTPS is configured by default in _launchSettings.json_. The launch profile includes `https` addresses in `applicationUrl` and `ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL` values.
+- Browser frontend authenticated with a browser token.
+- Incoming telemetry authenticated with an API key.
+
+HTTPS in the dashboard uses the ASP.NET Core development certificate. The certificate must be trusted for the dashboard to work correctly. The steps required to trust the development cert are different depending on the machine's operating system:
+
+- Trust the ASP.NET Core HTTPS development certificate on Windows and macOS
+- Trust HTTPS certificate on Linux
+
+There are scenarios where you might want to allow an unsecured transport. The dashboard can run without HTTPS from the Aspire AppHost by configuring the `ASPIRE_ALLOW_UNSECURED_TRANSPORT` setting to `true`.
+
+### Standalone mode
+
+The dashboard is shipped as a Docker image and can be used without the rest of Aspire. When the dashboard is launched in standalone mode, it defaults to a mix of secure and unsecured settings.
+
+- Browser frontend authenticated with a browser token.
+- Incoming telemetry is unsecured. Warnings are displayed in the console and dashboard UI.
+
+The telemetry endpoint accepts incoming OTLP data without authentication. When the endpoint is unsecured, the dashboard is open to receiving telemetry from untrusted apps.
+
+For information about securing the telemetry when running the dashboard in standalone mode, see [Securing the telemetry endpoint](#secure-telemetry-endpoint).
+
+## Secure telemetry endpoint
+
+The Aspire dashboard provides a variety of ways to view logs, traces, and metrics for your app. This information enables you to track the behavior and performance of your app and to diagnose any issues that arise. It's important that you can trust this information, and a warning is displayed in the dashboard UI if telemetry isn't secured.
+
+When the dashboard is launched by an Aspire AppHost, the OTLP and telemetry API endpoints are both enabled and secured with API key authentication automatically. However, when the dashboard is run in [standalone mode](/dashboard/standalone), additional configuration is required to enable and secure these endpoints.
+
+### Incoming OTLP endpoint
+
+The dashboard collects telemetry through an [OTLP (OpenTelemetry protocol)](https://opentelemetry.io/docs/specs/otel/protocol/) endpoint. Apps send telemetry to this endpoint, and the dashboard stores the external information it receives in memory, which is then accessible via the UI.
+
+To prevent untrusted apps from sending telemetry to Aspire, the OTLP endpoint should be secured. The OTLP endpoint is automatically secured with an API key when the dashboard is started by Aspire tooling. Additional configuration is required for standalone mode.
+
+API key authentication can be enabled on the telemetry endpoint with some additional configuration:
+
+The preceding Docker command:
+
+- Starts the Aspire dashboard image and exposes OTLP endpoints as port `4317` (gRPC) and port `4318` (HTTP)
+- Configures the OTLP endpoint to use `ApiKey` authentication. This requires that incoming telemetry has a valid `x-otlp-api-key` header value.
+- Configures the expected API key. `{MY_APIKEY}` in the example value should be replaced with a real API key. The API key can be any text, but a value with at least 128 bits of entropy is recommended.
+
+When API key authentication is configured, the dashboard validates incoming telemetry has a required API key. Apps that send the dashboard telemetry must be configured to send the API key. This can be configured in .NET with `OtlpExporterOptions.Headers`:
+
+```csharp
+builder.Services.Configure<OtlpExporterOptions>(
+    o => o.Headers = $"x-otlp-api-key={MY_APIKEY}");
+```
+
+Other languages have different OpenTelemetry APIs. Passing the [`OTEL_EXPORTER_OTLP_HEADERS` environment variable](https://opentelemetry.io/docs/specs/otel/protocol/exporter/) to apps is a universal way to configure the header.
+
+### Telemetry API endpoint
+
+The dashboard has an optional HTTP API that exposes collected telemetry data as JSON at `/api/telemetry/*` endpoints. The telemetry API allows programmatic access to spans, logs, traces, and resource information stored in the dashboard. Because telemetry data can contain sensitive runtime information, the API is disabled by default and must be explicitly enabled.
+
+When enabled, the telemetry API is served on the same endpoint as the dashboard frontend (`ASPNETCORE_URLS`). Enable and secure the API with the following configuration:
+
+When API key authentication is configured, each request to the telemetry API must include a valid `x-api-key` header. If the API is enabled without configuring an auth mode or API key, it defaults to `Unsecured` and a warning is logged at startup.
+
+## Memory exhaustion
+
+The dashboard stores external information it receives in memory, such as resource details and telemetry. While the number of resources the dashboard tracks are bounded, there isn't a limit to how much telemetry apps send to the dashboard. Limits must be placed on how much information is stored to prevent the dashboard using an excessive amount of memory and exhausting available memory on the current machine.
+
+### Telemetry limits
+
+To help prevent memory exhaustion, the dashboard limits how much telemetry it stores by default. For example, there is a maximum of 10,000 structured log entries per resource. Once the limit is reached, each new log entry received causes an old entry to be removed.
+
+Configuration can customize telemetry limits.

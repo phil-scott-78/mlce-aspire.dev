@@ -1,0 +1,371 @@
+---
+title: Host external executables in Aspire
+description: Learn how to host external executable applications in your Aspire AppHost using AddExecutable.
+order: 48
+---
+
+
+
+In Aspire, you can host external executable applications alongside your projects using the `AddExecutable` method. This capability is useful when you need to integrate executable applications or tools into your distributed application, such as Node.js applications, Python scripts, or specialized CLI tools.
+
+## When to use executable resources
+
+Use executable resources when you need to:
+
+- Run applications or tools directly on the host instead of in a container.
+- Integrate command-line tools or utilities into your application.
+- Run external processes that other resources depend on.
+- Develop with tools that provide local development servers.
+
+Common examples include:
+
+- **Frontend development servers**: Tools like [Vercel CLI](https://vercel.com/docs/cli) or webpack dev server.
+- **Language-specific applications**: Node.js apps, Python scripts, or Go applications.
+- **Database tools**: Migration utilities or database seeders.
+- **Build tools**: Asset processors or code generators.
+
+## Basic usage
+
+The `AddExecutable` method requires a resource name, the executable path, and optionally command-line arguments and a working directory:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Basic executable without arguments
+var nodeApp = builder.AddExecutable("frontend", "node", ".", "server.js");
+
+// Executable with command-line arguments
+var pythonApp = builder.AddExecutable(
+        "api", "python", ".", "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000");
+
+builder.Build().Run();
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+// Basic executable without arguments
+const nodeApp = await builder.addExecutable("frontend", "node", ".", ["server.js"]);
+
+// Executable with command-line arguments
+const pythonApp = await builder.addExecutable("api", "python", ".", ["-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]);
+
+await builder.build().run();
+```
+
+
+This code demonstrates setting up a basic executable resource. The first example runs a Node.js server script, while the second starts a Python application using Uvicorn with specific configuration options passed as arguments directly to the `AddExecutable` method.
+
+## Resource dependencies and environment configuration
+
+You can provide command-line arguments directly in the `AddExecutable` call and configure environment variables for resource dependencies. Executable resources can reference other resources and access their connection information.
+
+### Arguments in the AddExecutable call
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Arguments provided directly in AddExecutable
+var app = builder.AddExecutable(
+    "vercel-dev", "vercel", ".", "dev", "--listen", "3000");
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+// Arguments provided directly in addExecutable
+const app = await builder.addExecutable("vercel-dev", "vercel", ".", ["dev", "--listen", "3000"]);
+```
+
+
+### Resource dependencies with environment variables
+
+For arguments that depend on other resources, use environment variables:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var redis = builder.AddRedis("cache");
+var postgres = builder.AddPostgres("postgres").AddDatabase("appdb");
+
+var app = builder.AddExecutable("worker", "python", ".", "worker.py")
+    .WithReference(redis)      // Provides ConnectionStrings__cache
+    .WithReference(postgres);  // Provides ConnectionStrings__appdb
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const redis = await builder.addRedis("cache");
+const postgres = (await builder.addPostgres("postgres")).addDatabase("appdb");
+
+const app = await builder.addExecutable("worker", "python", ".", ["worker.py"])
+    .withReference(redis)      // Provides ConnectionStrings__cache
+    .withReference(postgres);  // Provides ConnectionStrings__appdb
+```
+
+
+When one resource depends on another, `WithReference` passes along environment variables containing the dependent resource's connection details. For example, the `worker` executable's reference to `redis` and `postgres` provides it with the `ConnectionStrings__cache` and `ConnectionStrings__appdb` environment variables, which contain connection strings to these resources.
+
+### Access specific endpoint information
+
+For more control over how connection information is passed to your executable:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var redis = builder.AddRedis("cache");
+
+var app = builder.AddExecutable("app", "node", ".", "app.js")
+    .WithReference(redis)
+    .WithEnvironment(context =>
+    {
+        // Provide individual connection details
+        context.EnvironmentVariables["REDIS_HOST"] = redis.Resource.PrimaryEndpoint.Property(EndpointProperty.Host);
+        context.EnvironmentVariables["REDIS_PORT"] = redis.Resource.PrimaryEndpoint.Property(EndpointProperty.Port);
+    });
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const redis = await builder.addRedis("cache");
+
+const app = await builder.addExecutable("app", "node", ".", ["app.js"])
+    .withReference(redis)
+    .withEnvironment("REDIS_HOST", redis.resource.primaryEndpoint.property("host"))
+    .withEnvironment("REDIS_PORT", redis.resource.primaryEndpoint.property("port"));
+```
+
+
+## Practical example: Vercel CLI
+
+Here's a complete example using the [Vercel CLI](https://vercel.com/docs/cli) to host a frontend application with a backend API:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Backend API
+var api = builder.AddProject<Projects.Api>("api")
+    .WithExternalHttpEndpoints();
+
+// Frontend with Vercel CLI
+var frontend = builder.AddExecutable(
+        "vercel-dev", "vercel", ".", "dev", "--listen", "3000")
+    .WithEnvironment("API_URL", api.GetEndpoint("http"))
+    .WithHttpEndpoint(port: 3000, name: "http");
+
+builder.Build().Run();
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+// Backend API
+const api = await builder.addProject("api", "./Api/Api.csproj", "https")
+    .withExternalHttpEndpoints();
+
+// Frontend with Vercel CLI
+const frontend = await builder.addExecutable("vercel-dev", "vercel", ".", ["dev", "--listen", "3000"])
+    .withEnvironment("API_URL", api.getEndpoint("http"))
+    .withHttpEndpoint({ port: 3000, name: "http" });
+
+await builder.build().run();
+```
+
+
+## Configure endpoints
+
+Executable resources can expose HTTP endpoints that other resources can reference:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var frontend = builder.AddExecutable(
+        "webpack-dev", "npx", ".", "webpack", "serve", "--port", "8080", "--host", "0.0.0.0")
+    .WithHttpEndpoint(port: 8080, name: "http");
+
+// Another service can reference the frontend
+var e2eTests = builder.AddExecutable("playwright", "npx", ".", "playwright", "test")
+    .WithEnvironment("BASE_URL", frontend.GetEndpoint("http"));
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const frontend = await builder.addExecutable("webpack-dev", "npx", ".", ["webpack", "serve", "--port", "8080", "--host", "0.0.0.0"])
+    .withHttpEndpoint({ port: 8080, name: "http" });
+
+// Another service can reference the frontend
+const e2eTests = await builder.addExecutable("playwright", "npx", ".", ["playwright", "test"])
+    .withEnvironment("BASE_URL", frontend.getEndpoint("http"));
+```
+
+
+## Environment configuration
+
+Configure environment variables for your executable:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddExecutable(
+        "api", "uvicorn", ".", "main:app", "--reload", "--host", "0.0.0.0")
+    .WithEnvironment("DEBUG", "true")
+    .WithEnvironment("LOG_LEVEL", "info")
+    .WithEnvironment(context =>
+    {
+        // Dynamic environment variables
+        context.EnvironmentVariables["START_TIME"] = DateTimeOffset.UtcNow.ToString();
+    });
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const app = await builder.addExecutable("api", "uvicorn", ".", ["main:app", "--reload", "--host", "0.0.0.0"])
+    .withEnvironment("DEBUG", "true")
+    .withEnvironment("LOG_LEVEL", "info")
+    .withEnvironment("START_TIME", new Date().toISOString());
+```
+
+
+## Publishing with PublishAsDockerFile
+
+For production deployment, executable resources need to be containerized. Use the `PublishAsDockerFile` method to specify how the executable should be packaged:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddExecutable(
+        "frontend", "npm", ".", "start", "--port", "3000")
+    .PublishAsDockerFile();
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const app = await builder.addExecutable("frontend", "npm", ".", ["start", "--port", "3000"])
+    .publishAsDockerFile();
+```
+
+
+When you call `PublishAsDockerFile()`, Aspire generates a Dockerfile during the publish process. You can customize this by providing your own Dockerfile:
+
+### Custom Dockerfile for publishing
+
+Create a `Dockerfile` in your executable's working directory:
+
+```dockerfile title="Dockerfile"
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+Then reference it in your AppHost:
+
+
+**C#**
+
+```csharp title="AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddExecutable("frontend", "npm", ".", "start")
+    .PublishAsDockerFile([new DockerfileBuildArg("NODE_ENV", "production")]);
+```
+
+**TypeScript**
+
+```typescript title="apphost.ts"
+
+const builder = await createBuilder();
+
+const app = await builder.addExecutable("frontend", "npm", ".", ["start"])
+    .publishAsDockerFile([{ name: "NODE_ENV", value: "production" }]);
+```
+
+
+## Best practices
+
+When working with executable resources:
+
+<Steps>
+<Step stepNumber="1">
+**Use explicit paths**: For better reliability, use full paths to executables when possible.
+
+</Step>
+<Step stepNumber="2">
+**Handle dependencies**: Use `WithReference` to establish proper dependency relationships.
+
+</Step>
+<Step stepNumber="3">
+**Configure explicit start**: Use `WithExplicitStart()` for executables that shouldn't start automatically.
+
+</Step>
+<Step stepNumber="4">
+**Prepare for deployment**: Always use `PublishAsDockerFile()` for production scenarios.
+
+</Step>
+<Step stepNumber="5">
+**Environment isolation**: Use environment variables rather than command-line arguments for sensitive configuration.
+
+</Step>
+<Step stepNumber="6">
+**Resource naming**: Use descriptive names that clearly identify the executable's purpose.
+
+</Step>
+</Steps>
+
+

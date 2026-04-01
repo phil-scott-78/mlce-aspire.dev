@@ -1,0 +1,433 @@
+---
+title: Customize Azure resources
+description: Learn how to customize Azure resource infrastructure in Aspire using ConfigureInfrastructure and custom Bicep.
+order: 176
+---
+
+
+
+When working with Azure integrations in Aspire, you often need to customize the generated infrastructure beyond the default settings. Aspire provides two main approaches for customizing Azure resources: using the `ConfigureInfrastructure` API and creating custom Bicep templates.
+
+## Azure.Provisioning customization
+
+The `ConfigureInfrastructure` API provides a strongly-typed, C#-based way to customize Azure resources. This is the recommended approach for most customizations. It uses the [Azure.Provisioning](https://www.nuget.org/packages/Azure.Provisioning) library to generate Bicep from C# code.
+
+> [!TIP] Azure.Provisioning resources
+> For detailed API documentation and examples, see:
+> - [Azure.Provisioning API reference](https://learn.microsoft.com/dotnet/api/overview/azure/provisioning)
+> - [Azure.Provisioning source code and README](https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/provisioning/Azure.Provisioning/README.md)
+
+### Basic infrastructure customization
+
+All Azure resources in Aspire inherit from `AzureProvisioningResource`, which exposes the `ConfigureInfrastructure` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var storage = builder.AddAzureStorage("storage");
+
+storage.ConfigureInfrastructure(infra =>
+{
+    // Get the storage account resource
+    var storageAccount = infra.GetProvisionableResources()
+                               .OfType<StorageAccount>()
+                               .Single();
+    
+    // Customize the SKU
+    storageAccount.Sku = new StorageSku
+    {
+        Name = StorageSkuName.PremiumLRS
+    };
+    
+    // Add tags
+    storageAccount.Tags["Environment"] = "Development";
+    storageAccount.Tags["CostCenter"] = "Engineering";
+});
+```
+
+### Common customization scenarios
+
+#### Configure SKUs and tiers
+
+
+**Storage**
+
+
+```csharp
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    
+    account.Sku = new StorageSku
+    {
+        Name = StorageSkuName.StandardGRS
+    };
+    account.Kind = StorageKind.StorageV2;
+});
+```
+
+
+**Service Bus**
+
+
+```csharp
+serviceBus.ConfigureInfrastructure(infra =>
+{
+    var ns = infra.GetProvisionableResources()
+                  .OfType<ServiceBusNamespace>()
+                  .Single();
+    
+    ns.Sku = new ServiceBusSku
+    {
+        Name = ServiceBusSkuName.Premium,
+        Capacity = 2
+    };
+});
+```
+
+
+**Redis**
+
+
+```csharp
+redis.ConfigureInfrastructure(infra =>
+{
+    var cache = infra.GetProvisionableResources()
+                     .OfType<RedisCache>()
+                     .Single();
+    
+    cache.Sku = new RedisCacheSku
+    {
+        Name = RedisCacheSkuName.Premium,
+        Family = RedisCacheSkuFamily.P,
+        Capacity = 1
+    };
+});
+```
+
+
+#### Configure networking
+
+```csharp
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    
+    // Enable firewall
+    account.NetworkRuleSet = new StorageAccountNetworkRuleSet
+    {
+        DefaultAction = StorageNetworkDefaultAction.Deny,
+        Bypass = "AzureServices"
+    };
+    
+    // Allow specific IP
+    account.NetworkRuleSet.IpRules.Add(new StorageAccountIPRule
+    {
+        IPAddressOrRange = "203.0.113.0/24",
+        Action = "Allow"
+    });
+});
+```
+
+#### Configure security and compliance
+
+```csharp
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    
+    // Require HTTPS
+    account.EnableHttpsTrafficOnly = true;
+    
+    // Configure TLS version
+    account.MinimumTlsVersion = StorageMinimumTlsVersion.Tls1_2;
+    
+    // Enable blob encryption
+    account.Encryption = new StorageAccountEncryption
+    {
+        KeySource = StorageAccountKeySource.MicrosoftStorage,
+        Services = new StorageAccountEncryptionServices
+        {
+            Blob = new StorageEncryptionService { Enabled = true },
+            File = new StorageEncryptionService { Enabled = true }
+        }
+    };
+});
+```
+
+### Working with multiple resources
+
+When an integration creates multiple resources, you can customize each one:
+
+```csharp
+var servicebus = builder.AddAzureServiceBus("messaging");
+var queue = servicebus.AddQueue("orders");
+
+servicebus.ConfigureInfrastructure(infra =>
+{
+    // Customize the namespace
+    var ns = infra.GetProvisionableResources()
+                  .OfType<ServiceBusNamespace>()
+                  .Single();
+    ns.Sku = new ServiceBusSku { Name = ServiceBusSkuName.Standard };
+    
+    // Customize the queue
+    var queueResource = infra.GetProvisionableResources()
+                             .OfType<ServiceBusQueue>()
+                             .FirstOrDefault(q => q.Name.Contains("orders"));
+    
+    if (queueResource != null)
+    {
+        queueResource.MaxDeliveryCount = 5;
+        queueResource.DefaultMessageTimeToLive = TimeSpan.FromHours(24);
+    }
+});
+```
+
+### Adding Azure resources
+
+You can add additional Azure resources to the infrastructure:
+
+```csharp
+storage.ConfigureInfrastructure(infra =>
+{
+    // Add a private endpoint
+    var privateEndpoint = new PrivateEndpoint("storagepe")
+    {
+        Location = "eastus",
+        Subnet = new SubnetReference
+        {
+            Id = "/subscriptions/.../subnets/mysubnet"
+        }
+    };
+    
+    infra.Add(privateEndpoint);
+});
+```
+
+### Use an infrastructure resolver to customize Azure provisioning options
+
+Another method you can use to customize Azure provisioning is to create an [`InfrastructureResolver`](https://learn.microsoft.com/dotnet/api/azure.provisioning.primitives.infrastructureresolver) and write code in it to implement your requirements. Then add that class to the configuration options for your AppHost.
+
+A custom infrastructure resolver is a class that inherits from `InfrastructureResolver` and can override one or more of its virtual members to apply the desired customizations. In the following example, the `ResolveProperties` method is overridden to set the name of a Cosmos DB resource, but other members can also be overridden depending on your needs.
+
+```csharp title="C# — AppHost.cs"
+using Azure.Provisioning;
+using Azure.Provisioning.CosmosDB;
+using Azure.Provisioning.Primitives;
+
+internal sealed class FixedNameInfrastructureResolver : InfrastructureResolver
+{
+    public override void ResolveProperties(ProvisionableConstruct construct, ProvisioningBuildOptions options)
+    {
+        if (construct is CosmosDBAccount account)
+        {
+            account.Name = "ContosoCosmosDb";
+        }
+
+        base.ResolveProperties(construct, options);
+    }
+}
+```
+
+Having created that class, add it to the configuration options using code like this in the AppHost:
+
+```csharp title="C# — AppHost.cs"
+using Aspire.Hosting.Azure;
+using Microsoft.Extensions.DependencyInjection;
+
+var builder = DistributedApplication.CreateBuilder(args);
+
+builder.Services.Configure<AzureProvisioningOptions>(options =>
+{
+    options.ProvisioningBuildOptions.InfrastructureResolvers.Add(new FixedNameInfrastructureResolver());
+});
+
+builder.Build().Run();
+```
+
+## Custom Bicep templates
+
+For more complex scenarios or when you need full control, you can provide custom Bicep templates.
+
+### Using custom Bicep files
+
+Create a custom Bicep file in your AppHost project:
+
+```bicep title="custom-storage.bicep"
+@description('Storage account name')
+param storageAccountName string
+
+@description('Location')
+param location string = resourceGroup().location
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Premium_LRS'
+  }
+  kind: 'BlockBlobStorage'
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    networkAcls: {
+      defaultAction: 'Deny'
+      bypass: 'AzureServices'
+    }
+  }
+}
+
+output connectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};...'
+```
+
+Reference it in your AppHost:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var storage = builder.AddAzureBicepResource(
+    name: "storage",
+    bicepFilePath: "./custom-storage.bicep")
+    .WithParameter("storageAccountName", "mystorageaccount");
+
+builder.AddProject<Projects.WebApp>("webapp")
+       .WithReference(storage);
+```
+
+### Combining approaches
+
+You can combine `ConfigureInfrastructure` with custom Bicep for maximum flexibility:
+
+```csharp
+// Start with Aspire's default
+var storage = builder.AddAzureStorage("storage");
+
+// Customize with ConfigureInfrastructure
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    account.Sku = new StorageSku { Name = StorageSkuName.PremiumLRS };
+});
+
+// Add custom resources via Bicep
+var customResource = builder.AddAzureBicepResource(
+    name: "custom",
+    bicepFilePath: "./custom-resource.bicep");
+```
+
+## Best practices
+
+### Use ConfigureInfrastructure for standard customizations
+
+For common property changes like SKUs, tags, and basic configuration, prefer `ConfigureInfrastructure`:
+
+```csharp
+// ✅ Good - Simple and maintainable
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    account.Sku = new StorageSku { Name = StorageSkuName.PremiumLRS };
+});
+```
+
+### Use custom Bicep for complex scenarios
+
+Use custom Bicep when you need:
+- Complex networking configurations
+- Multiple interconnected resources
+- Custom resource types not in Azure.Provisioning
+- Advanced policy configurations
+
+### Keep infrastructure code close to application code
+
+Define infrastructure customizations in your AppHost alongside resource declarations:
+
+```csharp
+// All storage configuration in one place
+var storage = builder.AddAzureStorage("storage")
+                     .ConfigureInfrastructure(infra =>
+                     {
+                         // Customizations here
+                     });
+```
+
+### Use configuration for environment-specific values
+
+Don't hard-code environment-specific values:
+
+```csharp
+var skuName = builder.Configuration["Azure:Storage:Sku"] ?? "Standard_LRS";
+
+storage.ConfigureInfrastructure(infra =>
+{
+    var account = infra.GetProvisionableResources()
+                       .OfType<StorageAccount>()
+                       .Single();
+    account.Sku = new StorageSku { Name = skuName };
+});
+```
+
+## Generated Bicep inspection
+
+After customization, you can inspect the generated Bicep:
+
+1. Run your AppHost locally
+2. Check the `./infra` directory in your AppHost project
+3. Review the generated `.bicep` files
+
+The generated files reflect all customizations made via `ConfigureInfrastructure`.
+
+## Troubleshooting
+
+### Finding resource types
+
+If you're unsure what resource type to use:
+
+```csharp
+storage.ConfigureInfrastructure(infra =>
+{
+    // List all resources
+    var resources = infra.GetProvisionableResources();
+    foreach (var resource in resources)
+    {
+        Console.WriteLine($"Type: {resource.GetType().Name}");
+    }
+});
+```
+
+### Property not available
+
+If a property isn't available in the Azure.Provisioning types, you may need to:
+
+1. Update to the latest Aspire version
+2. Use custom Bicep for that specific property
+3. File an issue on the Aspire GitHub repository
+
+### Validation errors
+
+Azure will validate your configuration during deployment. Common issues:
+
+- Invalid SKU names or combinations
+- Location mismatches
+- Naming convention violations
+- Missing required properties
+
+> [!TIP]
+> Use the Azure Portal's "Export template" feature to see the Bicep for manually configured resources, then adapt it for Aspire.
+
+## See also
+
+- [Azure integrations overview](/integrations/cloud/azure/overview)
+- [Local Azure provisioning](/integrations/cloud/azure/local-provisioning)
+- [Deploy to Azure Container Apps](/docs/get-started/deploy-first-app)

@@ -1,0 +1,332 @@
+---
+title: Use the Aspire dashboard with Node.js apps
+description: How to use the Aspire Dashboard in a Node.js application.
+order: 79
+---
+
+
+
+The [Aspire dashboard](/dashboard/overview) provides a great user experience for viewing telemetry, and is available as a standalone container image that can be used with any OpenTelemetry-enabled app. In this article, you'll learn how to:
+
+- Start the Aspire dashboard in standalone mode.
+- Use the Aspire dashboard with a Node.js app.
+
+## Prerequisites
+
+To complete this tutorial, you need the following:
+
+- [Container runtime](/docs/get-started/setup-and-tooling/prerequisites/#install-an-oci-compliant-container-runtime).
+  - You can use an alternative container runtime, but the commands in this article are for Docker.
+- [Node.js 18 or higher](https://nodejs.org/en/download/package-manager) locally installed.
+
+## Create a sample application
+
+For this tutorial, you'll create a simple Express.js API that demonstrates how to integrate the Aspire dashboard with any Node.js application. While Aspire 13.0 includes JavaScript starter templates, this tutorial shows you how to add dashboard integration to any existing Node.js project.
+
+<Steps>
+<Step stepNumber="1">
+Create a new directory for your application:
+
+```bash title="Create project directory"
+mkdir aspire-nodejs-sample
+cd aspire-nodejs-sample
+```
+
+</Step>
+<Step stepNumber="2">
+Initialize a new Node.js project:
+
+```bash title="Initialize npm project"
+npm init -y
+```
+
+</Step>
+<Step stepNumber="3">
+Install Express.js and OpenTelemetry dependencies:
+
+```bash title="Install dependencies"
+npm install express @opentelemetry/api @opentelemetry/sdk-node \
+  @opentelemetry/exporter-trace-otlp-grpc \
+  @opentelemetry/exporter-metrics-otlp-grpc \
+  @opentelemetry/auto-instrumentations-node
+```
+
+</Step>
+<Step stepNumber="4">
+Create an Express.js API with a weather endpoint. Create an *app.js* file:
+
+```javascript title="JavaScript — app.js"
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Simple middleware for logging
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
+
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Weather API - Node.js',
+        endpoints: ['/api/weatherforecast', '/health']
+    });
+});
+
+app.get('/api/weatherforecast', (req, res) => {
+    const forecasts = [
+        { date: '2024-01-01', temperatureC: 25, summary: 'Sunny' },
+        { date: '2024-01-02', temperatureC: 20, summary: 'Cloudy' },
+        { date: '2024-01-03', temperatureC: 22, summary: 'Partly Cloudy' },
+        { date: '2024-01-04', temperatureC: 18, summary: 'Rainy' },
+        { date: '2024-01-05', temperatureC: 28, summary: 'Hot' }
+    ];
+
+    console.log('Returning weather forecast data');
+    res.json(forecasts);
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy' });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+```
+
+</Step>
+<Step stepNumber="5">
+Test the application:
+
+```bash title="Run the application"
+node app.js
+```
+
+</Step>
+<Step stepNumber="6">
+Browse to `http://localhost:3000/api/weatherforecast` to verify the API is working.
+
+</Step>
+<Step stepNumber="7">
+Stop the application with <kbd>Ctrl+C</kbd>.
+
+</Step>
+</Steps>
+
+## Configure OpenTelemetry
+
+Now let's add OpenTelemetry instrumentation to send telemetry data to the Aspire dashboard.
+
+<Steps>
+<Step stepNumber="1">
+Create a new file called *telemetry.js* to configure OpenTelemetry with proper resource attributes:
+
+```javascript title="JavaScript — telemetry.js"
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-grpc');
+const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
+const { resourceFromAttributes } = require('@opentelemetry/resources');
+const { ATTR_SERVICE_NAME } = require('@opentelemetry/semantic-conventions');
+
+// Configure the OTLP endpoint for standalone dashboard
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4317';
+
+// Create resource with service name
+const resource = resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: 'weather-api-nodejs',
+});
+
+const sdk = new NodeSDK({
+    resource: resource,
+    traceExporter: new OTLPTraceExporter({
+        url: otlpEndpoint,
+    }),
+    metricReader: new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({
+            url: otlpEndpoint,
+        }),
+        exportIntervalMillis: 5000,
+    }),
+    instrumentations: [getNodeAutoInstrumentations({
+        // Disable file system instrumentation to reduce noise
+        '@opentelemetry/instrumentation-fs': {
+            enabled: false,
+        },
+    })],
+});
+
+sdk.start();
+
+console.log('✅ OpenTelemetry configured for Aspire dashboard');
+
+process.on('SIGTERM', () => {
+    sdk.shutdown()
+    .then(() => console.log('Tracing terminated'))
+    .catch((error) => console.log('Error terminating tracing', error))
+    .finally(() => process.exit(0));
+});
+```
+
+</Step>
+<Step stepNumber="2">
+Update your *app.js* to import the telemetry configuration at the very beginning:
+
+```javascript title="JavaScript — app.js (beginning of file)"
+// This must be imported first to initialize OpenTelemetry!
+require('./telemetry');
+
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    console.log('Received request for home page');
+    res.json({
+        message: 'Hello from Node.js!',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/api/weather', (req, res) => {
+    const weather = [
+        { city: 'Seattle', temperature: 72, condition: 'Cloudy' },
+        { city: 'Portland', temperature: 68, condition: 'Rainy' },
+        { city: 'San Francisco', temperature: 65, condition: 'Foggy' },
+        { city: 'Los Angeles', temperature: 78, condition: 'Sunny' }
+    ];
+
+    console.log('Received request for weather data');
+    res.json(weather);
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+```
+
+</Step>
+<Step stepNumber="3">
+Restart your application:
+
+```bash
+npm start
+```
+
+</Step>
+</Steps>
+
+## Start the Aspire dashboard
+
+To start the Aspire dashboard in standalone mode, run the following Docker command:
+
+In the Docker logs, the endpoint and key for the dashboard are displayed. Copy the key and navigate to `http://localhost:18888` in a web browser. Enter the key to log in to the dashboard.
+
+## View telemetry in the dashboard
+
+After starting both the dashboard and your Node.js application, you can view telemetry data by making requests to your application and observing the results in the dashboard.
+
+<Steps>
+<Step stepNumber="1">
+Make some requests to your Node.js application:
+
+```bash
+curl http://localhost:3000/
+curl http://localhost:3000/api/weather
+```
+
+</Step>
+<Step stepNumber="2">
+Navigate to the Aspire dashboard at `http://localhost:18888` and explore the different sections:
+
+</Step>
+</Steps>
+
+### Traces
+
+The **Traces** page shows distributed traces for HTTP requests. Each request to your Express.js application creates a trace that you can explore to see the request flow and timing information.
+
+### Metrics
+
+The **Metrics** page displays various metrics collected from your Node.js application, including HTTP request metrics, Node.js runtime metrics, and custom metrics if you choose to add them.
+
+## Add custom telemetry (optional)
+
+You can enhance your application with custom spans and metrics. Here's an example of adding a custom metric to track API requests:
+
+```javascript title="JavaScript — app.js (with custom metrics)"
+// This must be imported first!
+require('./telemetry');
+
+const express = require('express');
+const { trace, metrics } = require('@opentelemetry/api');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Get a tracer for custom spans
+const tracer = trace.getTracer('weather-api-nodejs');
+
+// Create a custom metric counter
+const meter = metrics.getMeter('weather-api-nodejs');
+const apiRequestCounter = meter.createCounter('api.requests', {
+    description: 'Total number of API requests',
+});
+
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
+
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Weather API - Node.js',
+        endpoints: ['/api/weatherforecast', '/health']
+    });
+});
+
+app.get('/api/weatherforecast', (req, res) => {
+    // Create a custom span for this operation
+    const span = tracer.startSpan('get-weather-forecast');
+    
+    try {
+        const forecasts = [
+            { date: '2024-01-01', temperatureC: 25, summary: 'Sunny' },
+            { date: '2024-01-02', temperatureC: 20, summary: 'Cloudy' },
+            { date: '2024-01-03', temperatureC: 22, summary: 'Partly Cloudy' },
+            { date: '2024-01-04', temperatureC: 18, summary: 'Rainy' },
+            { date: '2024-01-05', temperatureC: 28, summary: 'Hot' }
+        ];
+        
+        // Increment custom metric
+        apiRequestCounter.add(1, { endpoint: '/api/weatherforecast' });
+        
+        // Add custom attributes to span
+        span.setAttributes({
+            'forecast.count': forecasts.length,
+            'endpoint': '/api/weatherforecast'
+        });
+        
+        console.log('Returning weather forecast data');
+        res.json(forecasts);
+    } finally {
+        span.end();
+    }
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy' });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
+```
+
+## Next steps
+
+You have successfully used the Aspire dashboard with a Node.js application. To learn more about the Aspire dashboard, see the [Aspire dashboard overview](/dashboard/overview) and how to orchestrate a Node.js application with the Aspire AppHost.
+
+To learn more about OpenTelemetry instrumentation for Node.js applications, see the [OpenTelemetry JavaScript documentation](https://opentelemetry.io/docs/languages/js/).

@@ -1,0 +1,21 @@
+<div class="not-prose my-6">
+    <div class="relative w-full" style="padding-bottom: 56.25%;">
+        <iframe
+            class="absolute top-0 left-0 w-full h-full rounded-lg"
+            src="https://www.youtube-nocookie.com/embed/@VideoId"
+            title="@Title"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+        </iframe>
+    </div>
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <p class="text-sm text-base-500 dark:text-base-400 mt-2 text-center">@Title</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string VideoId { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+}

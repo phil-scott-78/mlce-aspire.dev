@@ -1,0 +1,89 @@
+<PageTitle>Aspire Reference - Aspire</PageTitle>
+<HeadContent>
+    <meta name="description" content="Comprehensive reference documentation for Aspire — CLI tools, APIs, and command-line reference materials." />
+</HeadContent>
+
+<TopicHero
+    Icon="json"
+    Title="The tools you need,"
+    Highlight="at your fingertips."
+    Subtitle="From the interactive CLI to the full API surface — everything you need to build, run, and deploy Aspire applications is documented here."
+    Accent="cyan"
+    FloatingIcons="@(new[] { "terminal", "document", "open-book", "magnifier", "laptop" })"
+    PrimaryCta="@(("CLI overview", "/reference/cli/overview/"))"
+    SecondaryCta="@(("Browse samples", "/reference/samples/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">The Aspire CLI</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">The <code>aspire</code> CLI is a cross-platform, interactive-first tool that manages the full lifecycle of your distributed applications — from scaffolding to deployment.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Core commands</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Every <code>aspire</code> command is designed to be discoverable and interactive. Pass <code>--help</code> to any command for inline documentation.</p>
+
+<CapabilityGrid Columns="3" Capabilities="@_coreCommands" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">More commands</h2>
+
+<CapabilityGrid Columns="3" Capabilities="@_moreCommands" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">API reference</h2>
+
+<FeatureShowcase Features="@_apiReference" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Samples</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Explore fully functional sample projects that demonstrate real-world patterns and best practices with Aspire — from e-commerce apps with databases and caching, to multi-language integrations with JavaScript and Python, to cloud deployments with Azure Functions.</p>
+
+<FeatureShowcase Features="@_samples" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Diagnostics</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Every diagnostic Aspire emits falls into one of two categories. Both help you catch issues early — before they become runtime problems.</p>
+
+<CapabilityGrid Columns="2" Capabilities="@_diagnostics" />
+
+<CTABanner
+    Title="Ready to get hands-on?"
+    Description="Install the CLI and start building your first distributed application in minutes."
+    PrimaryCta="@(("Install the Aspire CLI", "/docs/get-started/setup-and-tooling/install-cli/"))"
+    SecondaryCta="@(("Build your first app", "/docs/get-started/first-app/"))" />
+
+<SectionNavigation Previous="@(("Deployment", "/deployment/"))" Next="@(("Community", "/community/"))" />
+
+@code {
+    private static readonly List<CapabilityItem> _coreCommands =
+    [
+        new("json", "aspire new", "Scaffold a new Aspire project from a rich library of templates. Interactive prompts guide you through every option.", "/reference/cli/commands/aspire-new/"),
+        new("terminal", "aspire run", "Start your entire distributed application locally. The dashboard launches automatically for real-time monitoring.", "/reference/cli/commands/aspire-run/"),
+        new("rocket", "aspire publish", "Generate deployment artifacts — Docker Compose, Kubernetes manifests, Bicep, and more — with parameterized secrets.", "/reference/cli/commands/aspire-publish/"),
+        new("cloud-download", "aspire deploy", "Resolve parameters and execute a deployment to your target environment. Works with Azure, Docker, and custom integrations.", "/reference/cli/commands/aspire-deploy/"),
+        new("puzzle", "aspire init", "Add Aspire orchestration to any existing .NET solution. Adds the AppHost project and wires up service defaults.", "/reference/cli/commands/aspire-init/"),
+        new("heart", "aspire doctor", "Diagnose your development environment. Checks for .NET SDK, container runtime, and other prerequisites.", "/reference/cli/commands/aspire-doctor/"),
+    ];
+
+    private static readonly List<CapabilityItem> _moreCommands =
+    [
+        new("add-document", "aspire add", "Add integrations and resources to your AppHost project interactively.", "/reference/cli/commands/aspire-add/"),
+        new("bars", "aspire ps", "List all running Aspire processes and their status.", "/reference/cli/commands/aspire-ps/"),
+        new("close", "aspire stop", "Gracefully stop a running Aspire application.", "/reference/cli/commands/aspire-stop/"),
+        new("forward-slash", "aspire resource", "Execute a command exposed by a resource in a running Aspire apphost.", "/reference/cli/commands/aspire-resource/"),
+        new("setting", "aspire config", "Get, set, list, and manage CLI configuration values.", "/reference/cli/commands/aspire-config/"),
+        new("star", "aspire agent", "Initialize and configure AI agent support, including the MCP server.", "/reference/cli/commands/aspire-agent/"),
+    ];
+
+    private static readonly List<FeatureItem> _apiReference =
+    [
+        new("terminal", "Search C# APIs", "A searchable interface to explore all Aspire C# APIs, types, and members across every Aspire package. Find exactly the type or method you need.", "#", "Search C# APIs", "purple"),
+        new("json", "Search TypeScript APIs", "Explore the full TypeScript API surface for Aspire — from core SDK types to CLI configuration interfaces. Searchable and cross-referenced for easy discovery.", "#", "Search TypeScript APIs", "blue"),
+        new("setting", "CLI configuration", "Customize CLI behavior, default templates, telemetry, and more with per-user and per-project configuration.", "/reference/cli/configuration/", "View config options", "purple"),
+        new("download", "Install script reference", "Detailed reference for the cross-platform Aspire CLI install script — options, parameters, and automation scenarios.", "/reference/cli/install-script/", "Script reference", "green"),
+    ];
+
+    private static readonly List<FeatureItem> _samples =
+    [
+        new("puzzle", "Browse all samples", "Filter by technology, language, or feature to find the perfect starting point for your next project. Each sample links directly to its GitHub repository for easy cloning.", "/reference/samples/", "View samples", "orange"),
+    ];
+
+    private static readonly List<CapabilityItem> _diagnostics =
+    [
+        new("warning", "Warnings", "Non-blocking issues that flag potential problems — unsupported languages, experimental APIs, and configuration suggestions that keep your project on the right track.", "/docs/diagnostics/overview/"),
+        new("error", "Errors", "Blocking issues that must be resolved — missing SDK references, invalid resource names, and API usage violations that prevent your app from building correctly.", "/docs/diagnostics/overview/"),
+    ];
+}

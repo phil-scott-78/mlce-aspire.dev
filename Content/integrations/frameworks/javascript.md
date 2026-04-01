@@ -1,0 +1,536 @@
+---
+title: JavaScript integration
+description: Learn how to orchestrate JavaScript applications with Aspire using the Aspire.Hosting.JavaScript package.
+order: 343
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/javascript.svg" Alt="JavaScript logo">
+
+The Aspire JavaScript/TypeScript hosting integration enables you to orchestrate JavaScript applications alongside your Aspire projects in the AppHost. This integration provides a unified approach to running JavaScript applications with support for multiple package managers (npm, yarn, pnpm, bun), runtimes (Node.js), and build tools (Vite, and more).
+</IntegrationIcon>
+
+> [!CAUTION] Package rename
+> In Aspire 13.0, `Aspire.Hosting.NodeJs` was renamed to
+> `Aspire.Hosting.JavaScript`.
+> 
+> Use `Aspire.Hosting.JavaScript` for new and existing Aspire 13+ applications.
+> `Aspire.Hosting.NodeJs` is the old package name.
+
+## Hosting integration
+
+To get started with the Aspire JavaScript hosting integration, install the [📦 Aspire.Hosting.JavaScript](https://www.nuget.org/packages/Aspire.Hosting.JavaScript) NuGet package in the AppHost project.
+
+<InstallPackage PackageName="Aspire.Hosting.JavaScript" />
+
+The integration exposes a number of app resource types:
+
+- `JavaScriptAppResource`: Added with the `AddJavaScriptApp` method for general JavaScript applications
+- `NodeAppResource`: Added with the `AddNodeApp` method for running specific JavaScript files with Node.js
+- `ViteAppResource`: Added with the `AddViteApp` method for Vite applications with Vite-specific defaults
+
+## Add JavaScript application
+
+The `AddJavaScriptApp` method is the foundational method for adding JavaScript applications to your Aspire AppHost. It provides a consistent way to orchestrate JavaScript applications with automatic package manager detection and intelligent defaults.
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ExampleProject>();
+
+var frontend = builder.AddJavaScriptApp("frontend", "./frontend")
+    .WithHttpEndpoint(port: 3000, env: "PORT")
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+By default, `AddJavaScriptApp`:
+
+- Uses npm as the package manager when `package.json` is present
+- Runs the "dev" script during local development
+- Runs the "build" script when publishing to create production build output
+- Can generate publish-time container build artifacts for that build output
+
+The method accepts the following parameters:
+
+- `name`: The name of the resource in the Aspire dashboard
+- `appDirectory`: The path to the directory containing your JavaScript application (where `package.json` is located)
+- `runScriptName` (optional): The name of the npm script to run when starting the application. Defaults to 'dev'.
+
+## Add Node.js application
+
+For Node.js applications that don't use a package.json script runner, you can directly run a JavaScript file using the `AddNodeApp` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ExampleProject>();
+
+var nodeApp = builder.AddNodeApp("node-app", "./node-app", "server.js")
+    .WithHttpEndpoint(port: 3000, env: "PORT")
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+The `AddNodeApp` method requires:
+
+- **name**: The name of the resource in the Aspire dashboard
+- **appDirectory**: The path to the directory containing the node application.
+- **scriptPath** The path to the script relative to the app directory to run.
+
+## Add Vite application
+
+For Vite applications, you can use the `AddViteApp` extension method which provides Vite-specific defaults and optimizations:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ExampleProject>();
+
+var viteApp = builder.AddViteApp("vite-app", "./vite-app")
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+`AddViteApp` automatically configures:
+
+- **HTTP endpoint**: Registers an `http` endpoint and sets the `PORT` environment variable — you don't need to call `WithHttpEndpoint` yourself
+- **Development script**: Runs the "dev" script (typically `vite`) during local development
+- **Build script**: Runs the "build" script (typically `vite build`) when publishing
+- **Package manager**: Uses npm by default, but can be customized with `WithYarn()`, `WithPnpm()`, or `WithBun()`
+
+> [!CAUTION]
+> Do _not_ call `.WithHttpEndpoint()` on a Vite resource. `AddViteApp` already registers an `http` endpoint with the `PORT` environment variable, and adding another causes a duplicate endpoint error at runtime.
+
+> [!NOTE]
+> The Vite dev server is only used for local development. During publish, Aspire
+> builds the frontend assets, but another resource must serve those built files in
+> production.
+
+The method accepts the same parameters as `AddJavaScriptApp`:
+
+- **name**: The name of the resource in the Aspire dashboard
+- **appDirectory**: The path to the directory containing the Vite app.
+- **runScriptName** (optional): The name of the script that runs the Vite app. Defaults to "dev".
+
+## Configure package managers
+
+Aspire automatically detects and supports multiple JavaScript package managers with intelligent defaults for both development and production scenarios.
+
+### Auto-install by default
+
+Package managers automatically install dependencies by default. This ensures dependencies are always up-to-date during development and publishing.
+
+### Use npm (default)
+
+npm is the default package manager. If your project has a `package.json` file, Aspire will use npm unless you specify otherwise:
+
+```csharp title="C# — AppHost.cs" "WithNpm"
+var builder = DistributedApplication.CreateBuilder(args);
+
+// npm is used by default
+var app = builder.AddJavaScriptApp("app", "./app");
+
+// Customize npm with additional flags
+var customApp = builder.AddJavaScriptApp("custom-app", "./custom-app")
+    .WithNpm(installCommand: "ci", installArgs: ["--legacy-peer-deps"]);
+
+// After adding all resources, run the app...
+```
+
+When publishing (production mode), Aspire automatically uses `npm ci` if `package-lock.json` exists, otherwise it uses `npm install` for deterministic builds.
+
+### Use yarn
+
+To use yarn as the package manager, call the `WithYarn` extension method:
+
+```csharp title="C# — AppHost.cs" "WithYarn"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithYarn();
+
+// Customize yarn with additional flags
+var customApp = builder.AddJavaScriptApp("custom-app", "./custom-app")
+    .WithYarn(installArgs: ["--immutable"]);
+
+// After adding all resources, run the app...
+```
+
+When publishing, Aspire uses:
+
+- `yarn install --immutable` if `yarn.lock` exists and yarn v2+ is detected
+- `yarn install --frozen-lockfile` if `yarn.lock` exists with yarn v1
+- `yarn install` otherwise
+
+### Use pnpm
+
+To use pnpm as the package manager, call the `WithPnpm` extension method:
+
+```csharp title="C# — AppHost.cs" "WithPnpm"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithPnpm();
+
+// Customize pnpm with additional flags
+var customApp = builder.AddJavaScriptApp("custom-app", "./custom-app")
+    .WithPnpm(installArgs: ["--frozen-lockfile"]);
+
+// After adding all resources, run the app...
+```
+
+When publishing, Aspire uses `pnpm install --frozen-lockfile` if `pnpm-lock.yaml` exists, otherwise it uses `pnpm install`.
+
+### Use Bun
+
+To use Bun as the package manager, call the `WithBun` extension method:
+
+```csharp title="C# — AppHost.cs" "WithBun"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddViteApp("app", "./app")
+    .WithBun();
+
+// Customize Bun with additional flags
+var customApp = builder.AddViteApp("custom-app", "./custom-app")
+    .WithBun(installArgs: ["--frozen-lockfile"]);
+
+// After adding all resources, run the app...
+```
+
+When publishing, Aspire uses `bun install --frozen-lockfile` if `bun.lock` or `bun.lockb` exists, otherwise it uses `bun install`.
+
+Bun supports passing script arguments without the `--` separator, so commands like `bun run dev --port 3000` work without needing `bun run dev -- --port 3000`.
+
+When publishing to a container, `WithBun()` automatically configures a Bun build image (`oven/bun:1`) since Bun is not available in the default Node.js base images. To use a specific Bun version, configure a custom build image:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddViteApp("app", "./app")
+    .WithBun()
+    .WithDockerfileBaseImage(buildImage: "oven/bun:1.1");
+
+// After adding all resources, run the app...
+```
+
+## Customize scripts
+
+You can customize which scripts run during development and build:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Use different script names
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithRunScript("start")      // Run "npm run start" during development instead of "dev"
+    .WithBuildScript("prod");    // Run "npm run prod" during publish instead of "build"
+
+// After adding all resources, run the app...
+```
+
+### Pass arguments to scripts
+
+To pass command-line arguments to your scripts, use the `WithArgs` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithRunScript("dev")
+    .WithArgs("--port", "3000", "--host");
+
+// After adding all resources, run the app...
+```
+
+Alternatively, you can define custom scripts in your `package.json` with arguments baked in:
+
+```json title="package.json"
+{
+  "scripts": {
+    "dev": "vite",
+    "dev:custom": "vite --port 3000 --host"
+  }
+}
+```
+
+Then reference the custom script:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithRunScript("dev:custom");
+
+// After adding all resources, run the app...
+```
+
+## Configure endpoints
+
+JavaScript applications typically use environment variables to configure the port they listen on. Use `WithHttpEndpoint` to configure the port and set the environment variable:
+
+> [!TIP]
+> `AddViteApp` already registers an `http` endpoint with the `PORT` environment variable. The following example applies to `AddJavaScriptApp` and `AddNodeApp` only.
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var app = builder.AddJavaScriptApp("app", "./app")
+    .WithHttpEndpoint(port: 3000, env: "PORT");
+
+// After adding all resources, run the app...
+```
+
+Common environment variables for JavaScript frameworks:
+
+- **PORT**: Generic port configuration used by many frameworks (Express, Vite, Next.js)
+- **VITE_PORT**: For Vite applications
+- **HOST**: Some frameworks also use this to bind to specific interfaces
+
+## Customize Vite configuration
+
+For Vite applications, you can specify a custom configuration file if you need to override the default Vite configuration resolution behavior:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var viteApp = builder.AddViteApp("vite-app", "./vite-app")
+    // Path is relative to the Vite service project root
+    .WithViteConfig("./vite.production.config.js");
+
+// After adding all resources, run the app...
+```
+
+The `WithViteConfig` method accepts:
+
+- **configPath**: The path to the Vite configuration file, relative to the Vite service project root.
+
+This is useful when you have multiple Vite configuration files for different scenarios (development, staging, production).
+
+### HTTPS configuration
+
+Aspire automatically augments existing Vite configurations to enable HTTPS endpoints at runtime, eliminating manual certificate configuration for development. When you configure HTTPS endpoints on a Vite resource, Aspire dynamically injects the necessary HTTPS configuration:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var viteApp = builder.AddViteApp("vite-app", "./vite-app")
+    .WithHttpsEndpoint(env: "PORT")
+    .WithHttpsDeveloperCertificate();
+
+// After adding all resources, run the app...
+```
+
+The HTTPS configuration is automatically applied without modifying your `vite.config.js` file. For more information about certificate configuration, see [Certificate configuration](/docs/app-host/configuration/certificate-configuration).
+
+## Pass API URLs to Vite apps
+
+When your Vite app needs to communicate with a backend API, pass the API URL via an environment variable. Vite only exposes variables prefixed with `VITE_` to client-side code.
+
+In your AppHost, expose the API URL to the Vite app using `WithEnvironment`:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ApiService>("api")
+    .WithExternalHttpEndpoints();
+
+var viteApp = builder.AddViteApp("vite-app", "./vite-app")
+    .WithReference(api)
+    .WithEnvironment("VITE_API_BASE_URL", api.GetEndpoint("https"));
+
+// After adding all resources, run the app...
+```
+
+In your Vite app, read the variable from `import.meta.env`:
+
+```typescript title="TypeScript — src/api.ts"
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+export async function fetchData() {
+  const response = await fetch(`${apiBaseUrl}/api/data`);
+  return response.json();
+}
+```
+
+> [!TIP]
+> `import.meta.env` variables are replaced at **build time** by Vite. For
+>   dynamic runtime values (such as a URL that changes per environment), consider
+>   using a server-rendered configuration endpoint instead. See [Pass runtime
+>   configuration to SPA frontends](#pass-runtime-configuration-to-spa-frontends).
+
+## Pass runtime configuration to SPA frontends
+
+Vite and other SPA build tools bake environment variables (such as `VITE_*`) into the JavaScript bundle at **build time** (for example, when building the client for production). However, Aspire sets environment variables at **runtime**. This means calling `.WithEnvironment("VITE_GOOGLE_CLIENT_ID", parameter)` on a Vite resource won't change values that were already baked into a previously built production bundle.
+
+To bridge this gap, pass the parameter to your API project as a standard environment variable and expose it through a configuration endpoint that the SPA fetches at startup.
+
+
+<Steps>
+<Step stepNumber="1">
+**Pass the parameter to the API in the AppHost**
+
+Define the parameter in the AppHost and pass it to the API project using `WithEnvironment`. Then reference the API from the frontend so it can call the endpoint:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var googleClientId = builder.AddParameter("google-client-id");
+
+var api = builder.AddProject<Projects.Api>("api")
+    .WithEnvironment("GOOGLE_CLIENT_ID", googleClientId);
+
+var frontend = builder.AddViteApp("frontend", "./frontend")
+    .WithPnpm()
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+</Step>
+<Step stepNumber="2">
+**Expose a config endpoint in the API**
+
+Create an endpoint in your API project that reads the environment variable from configuration and returns it to the frontend:
+
+```csharp title="C# — Program.cs"
+app.MapGet("/api/config/google-client-id", (IConfiguration config) =>
+{
+    var clientId = config["GOOGLE_CLIENT_ID"];
+
+    return string.IsNullOrEmpty(clientId)
+        ? Results.NotFound()
+        : Results.Ok(new { clientId });
+});
+```
+
+> [!CAUTION] Only expose public configuration
+> For multiple configuration values, consider grouping them under a single
+> endpoint (such as `GET /api/config`) to reduce network requests.
+>
+> Use this pattern only for non-secret/public configuration values (for
+> example OAuth client IDs). Do not expose secrets such as client secrets,
+> API keys, or connection strings via a frontend config endpoint.
+
+</Step>
+<Step stepNumber="3">
+**Fetch the config value in the SPA**
+
+In your frontend application, fetch the configuration value at startup instead of reading from `import.meta.env`:
+
+```typescript title="TypeScript — config.ts"
+export async function getConfig() {
+  const response = await fetch('/api/config/google-client-id');
+
+  if (!response.ok) {
+    throw new Error('Failed to load configuration');
+  }
+
+  const { clientId } = await response.json();
+  return { googleClientId: clientId };
+}
+```
+
+</Step>
+</Steps>
+
+> [!NOTE]
+> This pattern applies to any SPA framework that bakes environment variables at build time, including apps added with `AddViteApp` or `AddJavaScriptApp`. For server-side rendered frameworks (such as Next.js or Nuxt), you can access Aspire environment variables directly with `process.env` at runtime from server-side code paths.
+> 
+> Environment variables that are bundled into client-side code (for example, `NEXT_PUBLIC_*` in Next.js) are still substituted at build time, so they should use a runtime configuration endpoint like the one shown above if they need values defined by Aspire at app startup.
+
+## Monorepo and Turborepo patterns
+
+Aspire supports **monorepo** layouts where multiple JavaScript apps share a single root workspace. Each app is added as a separate resource in the AppHost pointing to its own subdirectory.
+
+### pnpm workspaces
+
+For a **pnpm** monorepo, install dependencies from the workspace root and reference individual app directories:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ApiService>("api");
+
+// Each app lives in its own subdirectory with its own package.json
+var frontend = builder.AddViteApp("frontend", "./apps/frontend")
+    .WithPnpm()
+    .WithReference(api);
+
+var dashboard = builder.AddViteApp("dashboard", "./apps/dashboard")
+    .WithPnpm()
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+> [!NOTE]
+> Each app directory must have its own `package.json` with a `dev` script. The
+>   `pnpm install` command should be run from the **monorepo root** before
+>   starting Aspire, so that the shared `node_modules` are populated.
+
+### Turborepo
+
+**Turborepo** orchestrates builds across a monorepo. Use a custom run script that delegates to the Turborepo pipeline for a specific app:
+
+```json title="apps/frontend/package.json"
+{
+  "scripts": {
+    "dev": "turbo run dev --filter=frontend"
+  }
+}
+```
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var api = builder.AddProject<Projects.ApiService>("api");
+
+var frontend = builder.AddJavaScriptApp("frontend", "./apps/frontend")
+    .WithPnpm()
+    .WithRunScript("dev")
+    .WithReference(api);
+
+// After adding all resources, run the app...
+```
+
+## Production builds
+
+When you publish your application, Aspire automatically:
+
+1. Generates publish-time build artifacts for containerized deployment
+2. Installs dependencies using deterministic install commands based on lockfiles
+3. Runs the build script (typically "build") to create production assets
+4. Produces frontend build output that another resource can include or serve
+
+This ensures your JavaScript applications are built consistently across
+environments and can participate in Aspire publishing workflows.
+
+> [!CAUTION] Production deployment rule
+> `AddJavaScriptApp` and `AddViteApp` are not, by themselves, the production web
+> server for your frontend.
+> 
+> During publish, Aspire uses them to build frontend assets. To deploy that
+> frontend, you must choose another resource to serve those built files in
+> production.
+> 
+> Adding `AddJavaScriptApp` or `AddViteApp` plus `.WithReference(...)` is not
+> enough to make the frontend independently deployable.
+
+> [!NOTE]
+> Local Vite proxy and route behavior does not automatically become production
+> behavior. If your frontend depends on Vite development-server routing or proxy
+> configuration, configure the production-serving resource separately.
+
+## See also
+
+- [External parameters](/docs/fundamentals/configuration/external-parameters) - Learn how to use parameters in Aspire
+- [Node.js hosting extensions](/integrations/frameworks/nodejs-extensions) - Community Toolkit extensions for Vite, Yarn, and pnpm
+- [What's new in Aspire 13](/docs/whats-new/aspire-13) - Learn about first-class JavaScript support
+- [Aspire integrations overview](/integrations/overview)
+- [Aspire GitHub repo](https://github.com/microsoft/aspire)

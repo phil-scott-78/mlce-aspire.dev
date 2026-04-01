@@ -1,0 +1,217 @@
+---
+title: Configure Azure Container Apps environments
+description: Learn how to configure Azure Container Apps environment settings for Aspire deployments.
+order: 178
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/azure-container-apps-environments.svg" Alt="Azure Container Apps environment logo">
+
+The [Aspire AppHost](/docs/fundamentals/core-concepts/app-host) simplifies infrastructure provisioning by generating code to create Azure resources for your applications. This approach enables you to model and configure deployment-related aspects directly in C#, reducing the need to rely on tools like Bicep. These aspects include configuring ACA environments, which provide a serverless platform for running containerized applications.
+</IntegrationIcon>
+
+It's easy to [publish resources as Azure Container Apps (ACA)](/integrations/cloud/azure/overview/#publish-as-azure-container-app) using any of the supported APIs:
+
+- [`AzureContainerAppProjectExtensions.PublishAsAzureContainerApp`](https://learn.microsoft.com/dotnet/api/aspire.hosting.azurecontainerappprojectextensions.publishasazurecontainerapp)
+- [`AzureContainerAppContainerExtensions.PublishAsAzureContainerApp`](https://learn.microsoft.com/dotnet/api/aspire.hosting.azurecontainerappcontainerextensions.publishasazurecontainerapp)
+- [`AzureContainerAppExecutableExtensions.PublishAsAzureContainerApp`](https://learn.microsoft.com/dotnet/api/aspire.hosting.azurecontainerappexecutableextensions.publishasazurecontainerapp)
+
+These APIs automatically create a default ACA environment when you publish your app. While this default setup works well for most scenarios, you might need to customize the ACA environment to meet specific requirements. To achieve this, use the `AddAzureContainerAppEnvironment` method.
+
+By using the `Azure.Provisioning` APIs (explained in [Customize Azure resources](/integrations/cloud/azure/customize-resources)), you can configure and customize ACA environments along with related resources, such as container registries and file share volumes. Any available deployment setting can be configured. For more information on the available settings, see [Microsoft.App managedEnvironments](https://learn.microsoft.com/azure/templates/microsoft.app/managedenvironments).
+
+This article guides you through the process of tailoring ACA environments for your solutions.
+
+> [!NOTE]
+> When you publish resources to Azure Container Apps using the
+>   `PublishAsAzureContainerApp` APIs, Aspire automatically sets the
+>   `AZURE_TOKEN_CREDENTIALS` environment variable to `managedidentity`. This
+>   ensures that `DefaultAzureCredential` uses only `ManagedIdentityCredential`
+>   for authentication, following [Azure SDK best
+>   practices](https://learn.microsoft.com/dotnet/azure/sdk/authentication/best-practices?tabs=aspdotnet#use-deterministic-credentials-in-production-environments).
+>   If you need to use a different credential type, you can remove this
+>   environment variable in the `PublishAsAzureContainerApp` callback. For more
+>   information, see [DefaultAzureCredential behavior in Azure
+>   deployments](/docs/whats-new/aspire-13/#defaultazurecredential-behavior-in-azure-deployments).
+
+## Add an ACA environment
+
+The `AzureContainerAppEnvironmentResource` type models an ACA environment resource. When you call the `AddAzureContainerAppEnvironment` method, it creates an instance of this type (wrapped in the `IResourceBuilder<AzureContainerAppEnvironmentResource>`).
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
+
+// Omitted for brevity...
+
+builder.Build().Run();
+```
+
+By default, the calling this API to add an ACA environment generates the following provisioning Bicep module:
+
+```bicep title="aca-env.module.bicep"
+@description('The location for the resource(s) to be deployed.')
+param location string = resourceGroup().location
+
+param userPrincipalId string
+
+param tags object = { }
+
+resource aca_env_mi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: take('aca_env_mi-${uniqueString(resourceGroup().id)}', 128)
+  location: location
+  tags: tags
+}
+
+resource aca_env_acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: take('acaenvacr${uniqueString(resourceGroup().id)}', 50)
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  tags: tags
+}
+
+resource aca_env_acr_aca_env_mi_AcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aca_env_acr.id, aca_env_mi.id, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d'))
+  properties: {
+    principalId: aca_env_mi.properties.principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+    principalType: 'ServicePrincipal'
+  }
+  scope: aca_env_acr
+}
+
+resource aca_env_law 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: take('acaenvlaw-${uniqueString(resourceGroup().id)}', 63)
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+  }
+  tags: tags
+}
+
+resource aca_env 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: take('acaenv${uniqueString(resourceGroup().id)}', 24)
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: aca_env_law.properties.customerId
+        sharedKey: aca_env_law.listKeys().primarySharedKey
+      }
+    }
+    workloadProfiles: [
+      {
+        name: 'consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
+  }
+  tags: tags
+}
+
+resource aspireDashboard 'Microsoft.App/managedEnvironments/dotNetComponents@2024-10-02-preview' = {
+  name: 'aspire-dashboard'
+  properties: {
+    componentType: 'AspireDashboard'
+  }
+  parent: aca_env
+}
+
+resource aca_env_Contributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aca_env.id, userPrincipalId, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c'))
+  properties: {
+    principalId: userPrincipalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')
+  }
+  scope: aca_env
+}
+
+output MANAGED_IDENTITY_NAME string = aca_env_mi.name
+
+output MANAGED_IDENTITY_PRINCIPAL_ID string = aca_env_mi.properties.principalId
+
+output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = aca_env_law.name
+
+output AZURE_LOG_ANALYTICS_WORKSPACE_ID string = aca_env_law.id
+
+output AZURE_CONTAINER_REGISTRY_NAME string = aca_env_acr.name
+
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = aca_env_acr.properties.loginServer
+
+output AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID string = aca_env_mi.id
+
+output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = aca_env.name
+
+output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = aca_env.id
+
+output AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN string = aca_env.properties.defaultDomain
+```
+
+This module configures:
+
+- A user-assigned managed identity for the ACA environment.
+- An Azure Container Registry (ACR) for the ACA environment.
+- A Log Analytics workspace for the ACA environment.
+- An Azure Container Apps environment.
+- The [Aspire dashboard](/dashboard/overview) for the ACA environment.
+- A role assignment for the user principal ID to the ACA environment.
+- Various outputs for the ACA environment.
+
+Using the `acaEnv` variable, you can chain a call to the `ConfigureInfrastructure` API to customize the ACA environment to your liking. For more information, see [Configure infrastructure](/integrations/cloud/azure/customize-resources).
+
+## Handle naming conventions
+
+By default, `AddAzureContainerAppEnvironment` uses a different Azure resource naming scheme than the [Azure Developer CLI (`azd`)](https://learn.microsoft.com/azure/developer/azure-developer-cli/). If you're upgrading an existing deployment that previously used `azd`, you might see duplicate Azure resources. To avoid this issue, call the `WithAzdResourceNaming` method to revert to the naming convention used by `azd`:
+
+```csharp
+var builder = DistributionApplicationBuilder.Create(args);
+
+var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env")
+    .WithAzdResourceNaming();
+
+// Omitted for brevity...
+
+builder.Build().Run();
+```
+
+Calling this API ensures your existing Azure resources remain consistent and prevents duplication.
+
+## Customize provisioning infrastructure
+
+All Azure resources are subclasses of the `AzureProvisioningResource` type. This enables customization of the generated Bicep by providing a fluent API to configure the Azure resources—using the `ConfigureInfrastructure` API:
+
+```csharp
+var builder = DistributionApplicationBuilder.Create(args);
+
+var acaEnv = builder.AddAzureContainerAppEnvironment(Config.ContainEnvironmentName);
+
+acaEnv.ConfigureInfrastructure(config =>
+{
+    var resources = config.GetProvisionableResources();
+    var containerEnvironment = resources.OfType<ContainerAppManagedEnvironment>().FirstOrDefault();
+
+    containerEnvironment.Tags.Add("ExampleKey", "Example value");
+});
+```
+
+The preceding code:
+
+- Chains a call to the `ConfigureInfrastructure` API:
+  - The `infra` parameter is an instance of the `AzureResourceInfrastructure` type.
+  - The provisionable resources are retrieved by calling the `GetProvisionableResources` method.
+  - The single `ContainerAppManagedEnvironment` resource is retrieved.
+  - A tag is added to the Azure Container Apps environment resource with a key of `ExampleKey` and a value of `Example value`.
+
+## See also
+
+- [Azure integrations overview](/integrations/cloud/azure/overview)
+- [Deploy to Azure Container Apps](/docs/get-started/deploy-first-app)
+- [Azure Container Apps documentation](https://learn.microsoft.com/azure/container-apps/)
+- [Container Apps pricing](https://learn.microsoft.com/azure/container-apps/billing)

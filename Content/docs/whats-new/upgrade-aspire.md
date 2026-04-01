@@ -1,0 +1,90 @@
+---
+title: Upgrade Aspire
+description: Learn how to upgrade your Aspire projects to the latest version.
+order: 11
+---
+
+
+
+Upgrading Aspire involves updating the **Aspire CLI** itself, the **Aspire SDK**, and all related **packages** in your solution. The `aspire update` command handles most of this for you, but you may also need to review breaking changes and update tooling extensions.
+
+> [!NOTE]
+> If you're new to Aspire, there's no reason to upgrade anything. See [prerequisites](/docs/get-started/setup-and-tooling/prerequisites) and [install Aspire CLI](/docs/get-started/setup-and-tooling/install-cli) to get started.
+
+## Upgrade with the Aspire CLI
+
+
+<Steps>
+<Step stepNumber="1">
+**Update the Aspire CLI** to the latest version:
+
+```bash title="Update the Aspire CLI"
+aspire update --self
+```
+
+</Step>
+<Step stepNumber="2">
+**Update your Aspire solution** by running:
+
+```bash title="Update your Aspire solution"
+aspire update
+```
+
+This command automatically:
+
+- Updates the [`Aspire.AppHost.Sdk` version](/docs/app-host/project-structure/aspire-sdk)
+- Updates all Aspire NuGet packages to the latest version
+- Supports both regular projects and Central Package Management (CPM)
+
+</Step>
+</Steps>
+
+## Update the VS Code extension (optional)
+
+If you have the Aspire extension installed, you can update it to get the latest tooling support:
+
+
+<Steps>
+<Step stepNumber="1">
+Open VS Code
+
+</Step>
+<Step stepNumber="2">
+Go to **Extensions** ()
+
+</Step>
+<Step stepNumber="3">
+Search for **Aspire**
+
+</Step>
+<Step stepNumber="4">
+Click **Update** if an update is available
+
+</Step>
+</Steps>
+
+## Remove the legacy workload (Aspire 8 only)
+
+Still rocking the Aspire workload? No judgment here—we've all been there. 🕰️ Time to let it go and join us in the future!
+
+> [!TIP]
+> This step is only needed if you're upgrading from Aspire 8. If you're already on Aspire 9 or later, you're good.
+
+Please remove the **aspire workload** with the following command:
+
+```bash 
+dotnet workload uninstall aspire
+```
+
+## Verify the upgrade
+
+After upgrading, run your application to ensure everything works as expected:
+
+```bash title="Run the Aspire application"
+aspire run
+```
+
+## Need help?
+
+- 🆘 Stuck? [Join the Discord community](https://discord.com/invite/raNPcaaSj8) for real-time support
+- 🐛 Found a bug? [File a GitHub issue](https://github.com/microsoft/aspire/issues/new/choose)

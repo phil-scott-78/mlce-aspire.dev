@@ -1,0 +1,53 @@
+<div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4 my-6">
+    @foreach (var f in Features)
+    {
+        var classes = GetAccentClasses(f.Accent);
+        <a href="@f.Href" class="@($"group relative overflow-hidden flex flex-col gap-3 p-7 rounded-xl no-underline border transition-all cursor-pointer hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-base-900 focus-visible:outline-offset-2 {classes.Card}")">
+            <div class="@($"w-12 h-12 rounded-[0.625rem] grid place-items-center transition-transform group-hover:scale-105 {classes.Icon}")">
+                <SvgIcon Name="@f.Icon" Size="28" />
+            </div>
+            <h3 class="m-0 text-lg font-bold text-base-900 dark:text-base-100 leading-tight">@f.Title</h3>
+            <p class="m-0 text-sm leading-relaxed text-base-500 dark:text-base-400 flex-1">@f.Description</p>
+            <span class="@($"inline-flex items-center gap-1 text-[0.85rem] font-semibold mt-auto transition-[gap] group-hover:gap-2.5 {classes.Link}")">
+                @(f.Label ?? "Explore")
+                <SvgIcon Name="right-arrow" Size="14" />
+            </span>
+        </a>
+    }
+</div>
+
+@code {
+    [Parameter] public List<FeatureItem> Features { get; set; } = [];
+
+    private static (string Card, string Icon, string Link) GetAccentClasses(string accent) => accent switch
+    {
+        "purple" => (
+            "border-primary-500/22 bg-primary-500/6 hover:border-primary-500/50 hover:bg-primary-500/12",
+            "bg-primary-500/24 dark:bg-primary-500/24 text-primary-500",
+            "text-primary-700 dark:text-primary-400"),
+        "blue" => (
+            "border-blue-500/22 bg-blue-500/6 hover:border-blue-500/50 hover:bg-blue-500/12",
+            "bg-blue-500/24 dark:bg-blue-500/24 text-blue-500",
+            "text-blue-700 dark:text-blue-400"),
+        "green" => (
+            "border-green-500/22 bg-green-500/6 hover:border-green-500/50 hover:bg-green-500/12",
+            "bg-green-500/24 dark:bg-green-500/24 text-green-500",
+            "text-green-700 dark:text-green-400"),
+        "orange" => (
+            "border-amber-500/22 bg-amber-500/6 hover:border-amber-500/50 hover:bg-amber-500/12",
+            "bg-amber-500/24 dark:bg-amber-500/24 text-amber-500",
+            "text-amber-700 dark:text-amber-400"),
+        "magenta" => (
+            "border-fuchsia-500/22 bg-fuchsia-500/6 hover:border-fuchsia-500/50 hover:bg-fuchsia-500/12",
+            "bg-fuchsia-500/24 dark:bg-fuchsia-500/24 text-fuchsia-500",
+            "text-fuchsia-700 dark:text-fuchsia-400"),
+        "cyan" => (
+            "border-cyan-500/22 bg-cyan-500/6 hover:border-cyan-500/50 hover:bg-cyan-500/12",
+            "bg-cyan-500/24 dark:bg-cyan-500/24 text-cyan-500",
+            "text-cyan-700 dark:text-cyan-400"),
+        _ => (
+            "border-primary-500/22 bg-primary-500/6 hover:border-primary-500/50 hover:bg-primary-500/12",
+            "bg-primary-500/24 dark:bg-primary-500/24 text-primary-500",
+            "text-primary-700 dark:text-primary-400"),
+    };
+}

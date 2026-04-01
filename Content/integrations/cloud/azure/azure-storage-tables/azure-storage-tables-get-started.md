@@ -1,0 +1,105 @@
+---
+title: Getting started with the Azure Table Storage integration
+description: Learn how to set up the Aspire Azure Table Storage hosting and client integrations simply.
+order: 239
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/azure-table-icon.png" Alt="Azure Table Storage logo">
+
+[Azure Table Storage](https://learn.microsoft.com/azure/storage/tables/table-storage-overview) is a service for storing structured NoSQL data in Azure Storage tables. The Aspire Azure Table Storage Hosting integration provides methods to create Azure Table Storage resources from code in your Aspire AppHost project.
+</IntegrationIcon>
+
+In this introduction, you'll see how to install and use the Aspire Azure Table Storage integrations in a simple configuration. If you already have this knowledge, see [Azure Table Storage Hosting integration](/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-host) for full reference details.
+
+> [!NOTE]
+> To follow this guide, you must have created an Aspire solution to work with. To learn how to do that, see [Build your first Aspire app](/docs/get-started/first-app).
+
+## Set up hosting integration
+
+To begin, install the Aspire Azure Storage Hosting integration in your Aspire AppHost project. This integration allows you to create and manage Azure Table Storage resources from your Aspire hosting projects:
+
+<InstallPackage PackageName="Aspire.Hosting.Azure.Storage" />
+
+Next, in the AppHost project, create an Azure Table Storage resource and pass it to the consuming client projects:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var tables = builder.AddAzureStorage("storage")
+    .AddTables("tables");
+
+var myService = builder.AddProject<Projects.MyService>()
+    .WithReference(tables);
+
+// After adding all resources, run the app...
+
+builder.Build().Run();
+```
+
+The preceding code adds an Azure Storage resource named `storage` to the AppHost project, adds a table storage resource to it named `tables`, and passes the table storage connection information to the consuming project.
+
+> [!CAUTION]
+> When you call `AddAzureStorage`, it implicitly calls
+>   `AddAzureProvisioning`—which adds support for generating Azure resources
+>   dynamically during app startup. The app must configure the appropriate
+>   subscription and location. For more information, see [Local provisioning:
+>   Configuration](/integrations/cloud/azure/local-provisioning/#configuration).
+
+> [!TIP]
+> This is the simplest implementation of Azure Table Storage resources in the AppHost. There are many more options you can choose from to address your requirements. For full details, see [Azure Table Storage Hosting integration](/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-host).
+
+## Set up client integration
+
+To use Azure Table Storage from your client applications, install the Aspire Azure Table Storage client integration in your client project:
+
+<InstallPackage PackageName="Aspire.Azure.Data.Tables" />
+
+In the `Program.cs` file of your client-consuming project, call the `AddAzureTableServiceClient` extension method to register a `TableServiceClient` for use via the dependency injection container:
+
+```csharp
+builder.AddAzureTableServiceClient(connectionName: "tables");
+```
+
+> [!TIP]
+> The `connectionName` parameter must match the name used when adding the table storage resource in the AppHost project.
+
+### Use injected Azure Table Storage properties
+
+In the AppHost, when you used the `WithReference` method to pass an Azure Table Storage resource to a consuming client project, Aspire injects several configuration properties that you can use in the consuming project.
+
+Aspire exposes each property as an environment variable named `[RESOURCE]_[PROPERTY]`. For instance, the `Uri` property of a resource called `tables` becomes `TABLES_URI`.
+
+Use the `GetValue()` method to obtain these environment variables in consuming projects:
+
+```csharp title="C# — Obtain configuration properties"
+string tableUri = builder.Configuration.GetValue<string>("TABLES_URI");
+```
+
+> [!TIP]
+> The full set of properties that Aspire injects depends on the Azure Table Storage resource configuration. For more information, see [Properties of the Azure Table Storage resources](/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-client/#properties-of-the-azure-table-storage-resources).
+
+## Add Azure Table Storage resources in client code
+
+After adding the `TableServiceClient`, you can retrieve the connection instance using dependency injection:
+
+```csharp
+public class ExampleService(TableServiceClient client)
+{
+    // Use client...
+}
+```
+
+For full details on using the client integration, see [Azure Table Storage Client integration](/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-client).
+
+## Next steps
+
+<CardGrid>
+    <LinkCard Title="Azure Table Storage Hosting integration"
+        
+        Href="/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-host">Learn more about the hosting integration features and capabilities</LinkCard>
+    <LinkCard Title="Azure Table Storage Client integration"
+        
+        Href="/integrations/cloud/azure/azure-storage-tables/azure-storage-tables-client">Learn how to use the Azure Table Storage client integration</LinkCard>
+</CardGrid>

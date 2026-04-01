@@ -1,0 +1,39 @@
+@page "/integrations/{*fileName:nonfile}"
+@inject ContentEngineOptions ContentEngineOptions
+@inject IMarkdownContentService<IntegrationsFrontMatter> MarkdownContentService
+@inject ITableOfContentService TableOfContentService
+
+@if (_isLandingPage)
+{
+    <IntegrationsLanding />
+}
+else
+{
+    <SectionPage Title="@_post?.FrontMatter.Title" Description="@_post?.FrontMatter.Description"
+                 HtmlContent="@_htmlContent" NavInfo="_navInfo"
+                 PreviousPage="_navInfo?.PreviousPage" NextPage="_navInfo?.NextPage"
+                 SiteTitle="@ContentEngineOptions.SiteTitle" />
+}
+
+@code {
+    private MarkdownContentPage<IntegrationsFrontMatter>? _post;
+    private string? _htmlContent;
+    private NavigationInfo? _navInfo;
+    private bool _isLandingPage;
+
+    [Parameter] public string FileName { get; init; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fileName = string.IsNullOrWhiteSpace(FileName) ? "index" : FileName;
+        _isLandingPage = fileName is "index";
+        if (_isLandingPage) return;
+
+        var page = await MarkdownContentService.GetRenderedContentPageByUrlOrDefault(fileName);
+        if (page == null) return;
+
+        _post = page.Value.Page;
+        _htmlContent = page.Value.HtmlContent;
+        _navInfo = await TableOfContentService.GetNavigationInfoAsync(_post.Url);
+    }
+}

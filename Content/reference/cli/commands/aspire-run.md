@@ -1,0 +1,109 @@
+---
+title: aspire run command
+description: Learn about the aspire run command and its usage. This command runs an Aspire AppHost.
+order: 149
+---
+
+
+
+## Name
+
+`aspire run` - Run an Aspire AppHost in development mode.
+
+## Synopsis
+
+```bash title="Aspire CLI"
+aspire run [options] [[--] <additional arguments>...]
+```
+
+## Description
+
+The `aspire run` command runs the AppHost project in development mode, which configures the Aspire environment, builds and starts resources defined by the AppHost, launches the web dashboard, and prints a list of endpoints.
+
+The command performs the following steps to run an Aspire AppHost:
+
+- Creates or updates the rooted `aspire.config.json` file and records the
+  selected AppHost there. Legacy `.aspire/settings.json` files are still read
+  during migration.
+- Installs or verifies that Aspire's local hosting certificates are installed and trusted.
+- Builds the AppHost project and its resources.
+- Starts the AppHost and its resources.
+- Starts the dashboard.
+
+The following snippet is an example of the output displayed by the `aspire run` command:
+
+```bash title="Aspire CLI"
+Dashboard:  https://localhost:17244/login?t=9db79f2885dae24ee06c6ef10290b8b2
+
+    Logs:  /home/vscode/.aspire/cli/logs/apphost-5932-2025-08-25-18-37-31.log
+
+        Press CTRL+C to stop the apphost and exit.
+```
+
+## Options
+
+The following options are available:
+
+- **`--`**
+
+  Delimits arguments to `aspire run` from arguments for the AppHost being run. All arguments after this delimiter are passed to the AppHost run.
+
+- **`--detach`**
+
+  Run the AppHost in the background and exit after it starts. The AppHost continues running as a background process. Use `aspire ps` to list running AppHosts and `aspire stop` to stop them.
+
+- **`--format <Json|Table>`**
+
+  Output result format. Only valid when used with `--detach`. Use `Json` for machine-readable output suitable for scripting and automation.
+
+- **`--isolated`**
+
+  Run in isolated mode with randomized ports and isolated user secrets, allowing multiple instances of the same AppHost to run simultaneously. This is useful for parallel testing or comparing different configurations side-by-side.
+
+- **`--no-build`**
+
+  Do not build or restore the project before running. Use this option when you have already built the project and want to skip the build step for faster startup.
+
+- - - - - - - ## Examples
+
+- Search the current directory structure for AppHost projects to build and run:
+
+  ```bash title="Aspire CLI"
+  aspire run
+  ```
+
+- Run a specific AppHost project:
+
+  ```bash title="Aspire CLI"
+  aspire run --apphost './projects/apphost/orchestration.AppHost.csproj'
+  ```
+
+- Run a specific AppHost project with arguments:
+
+  ```bash title="Aspire CLI"
+  aspire run --apphost './projects/apphost/orchestration.AppHost.csproj' -- -fast
+  ```
+
+- Run the AppHost in the background:
+
+  ```bash title="Aspire CLI"
+  aspire run --detach
+  ```
+
+- Run the AppHost in the background with JSON output:
+
+  ```bash title="Aspire CLI"
+  aspire run --detach --format Json
+  ```
+
+- Run in isolated mode for parallel testing:
+
+  ```bash title="Aspire CLI"
+  aspire run --isolated
+  ```
+
+- Skip building and run immediately:
+
+  ```bash title="Aspire CLI"
+  aspire run --no-build
+  ```

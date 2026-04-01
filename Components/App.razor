@@ -1,0 +1,44 @@
+@inject ContentEngineOptions Options
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <script src="/_content/MyLittleContentEngine.UI/scripts.js" defer></script>
+    <script>
+        const isDarkMode = localStorage.theme === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", isDarkMode);
+        document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
+    </script>
+    <HeadOutlet />
+    <script>
+        document.addEventListener('click', e => {
+            const summary = e.target.closest('details[data-toc] > summary');
+            if (!summary) return;
+            const details = summary.parentElement;
+            if (!details.open) return;
+            e.preventDefault();
+            const content = details.querySelector('[data-toc-content]');
+            const chevron = summary.querySelector('[data-toc-chevron]');
+            if (!content) { details.open = false; return; }
+            // Force the closing state while still open so transitions play
+            content.style.gridTemplateRows = '0fr';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            content.addEventListener('transitionend', () => {
+                details.open = false;
+                content.style.gridTemplateRows = '';
+                if (chevron) chevron.style.transform = '';
+            }, { once: true });
+        });
+    </script>
+</head>
+<body class="font-sans antialiased scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent scrollbar-color dark:scrollbar-thumb-base-500 data-[mobile-menu-open=true]:overflow-hidden" data-mobile-menu-open="false">
+    <Routes />
+</body>
+</html>

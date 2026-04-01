@@ -1,0 +1,162 @@
+@{
+    var classes = GetAccentClasses(Accent);
+}
+<section class="@($"relative overflow-hidden py-12 px-8 sm:py-8 sm:px-5 rounded-xl mb-8 border {classes.Section}")">
+    <div class="@($"absolute inset-0 pointer-events-none {classes.Grid}")" aria-hidden="true"></div>
+    <div class="relative z-10 max-w-2xl pl-4 sm:pl-2">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <div class="@($"relative z-10 inline-flex items-center justify-center w-16 h-16 rounded-xl mb-5 ml-4 border-2 {classes.IconBox}")">
+                <SvgIcon Name="@Icon" Size="40" />
+            </div>
+        }
+        <h1 class="text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.15] tracking-tight m-0 mb-4 text-base-900 dark:text-base-100">
+            @Title
+            @if (!string.IsNullOrEmpty(Highlight))
+            {
+                <span>&nbsp;</span><span class="@($"bg-clip-text text-transparent {classes.Highlight}")">@Highlight</span>
+            }
+        </h1>
+        <p class="text-[clamp(1rem,2vw,1.2rem)] leading-relaxed text-base-500 dark:text-base-400 m-0 mb-7 max-w-xl">@Subtitle</p>
+        @if (PrimaryCta != null || SecondaryCta != null)
+        {
+            <div class="flex flex-wrap gap-3 items-center">
+                @if (PrimaryCta != null)
+                {
+                    <a href="@PrimaryCta.Value.Href" class="@($"inline-flex gap-2 items-center py-2.5 px-6 rounded-lg font-semibold text-[0.95rem] no-underline transition-all whitespace-nowrap cursor-pointer hover:brightness-110 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-base-900 focus-visible:outline-offset-2 {classes.BtnPrimary}")">
+                        @PrimaryCta.Value.Label
+                        <SvgIcon Name="right-arrow" Size="20" />
+                    </a>
+                }
+                @if (SecondaryCta != null)
+                {
+                    <a href="@SecondaryCta.Value.Href" class="@($"inline-flex gap-2 items-center py-2.5 px-6 rounded-lg font-semibold text-[0.95rem] no-underline transition-all whitespace-nowrap cursor-pointer text-base-900 dark:text-base-100 border focus-visible:outline-2 focus-visible:outline-base-900 focus-visible:outline-offset-2 {classes.BtnSecondary}")">
+                        @SecondaryCta.Value.Label
+                    </a>
+                }
+            </div>
+        }
+    </div>
+    @if (FloatingIcons is { Length: > 0 })
+    {
+        <div class="absolute top-0 bottom-0 right-0 w-[40%] sm:w-1/2 sm:-right-[10%] pointer-events-none overflow-hidden" aria-hidden="true">
+            @foreach (var cfg in _floatingConfigs)
+            {
+                <span class="@($"floating-icon absolute inline-flex items-center justify-center opacity-10 blur-[0.5px] motion-reduce:animate-none motion-reduce:opacity-[0.08] {classes.FloatingIcon}")"
+                      style="top: @(cfg.Top)%; right: @(cfg.Right)%; font-size: @(cfg.Size)rem; animation-delay: @(cfg.Delay)s; animation-duration: @(cfg.Duration)s;">
+                    <SvgIcon Name="@cfg.IconName" Size="24" />
+                </span>
+            }
+        </div>
+    }
+    <div class="@($"absolute top-[-30%] right-[-10%] w-1/2 h-[160%] pointer-events-none {classes.Glow}")" aria-hidden="true"></div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Highlight { get; set; }
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public string Accent { get; set; } = "purple";
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string[]? FloatingIcons { get; set; }
+    [Parameter] public (string Label, string Href)? PrimaryCta { get; set; }
+    [Parameter] public (string Label, string Href)? SecondaryCta { get; set; }
+
+    private record AccentClasses(
+        string Section, string Grid, string IconBox, string Highlight,
+        string BtnPrimary, string BtnSecondary, string FloatingIcon, string Glow);
+
+    private static AccentClasses GetAccentClasses(string accent)
+    {
+        return accent switch
+        {
+            "blue" => MakeClasses("blue"),
+            "green" => MakeClasses("green"),
+            "orange" => MakeClasses("amber"),
+            "magenta" => MakeClasses("fuchsia"),
+            "cyan" => MakeClasses("cyan"),
+            "red" => MakeClasses("red"),
+            "yellow" => MakeClasses("yellow"),
+            _ => MakeClasses("primary", isPrimary: true),
+        };
+    }
+
+    private static AccentClasses MakeClasses(string color, bool isPrimary = false)
+    {
+        var c = color;
+        return new AccentClasses(
+            Section: $"border-{c}-500/25 bg-gradient-to-br from-{c}-500/8 via-primary-300/4 to-transparent",
+            Grid: $"opacity-[0.06] bg-[length:48px_48px] bg-[image:linear-gradient(var(--color-{c}-500)_1px,transparent_1px),linear-gradient(90deg,var(--color-{c}-500)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_40%,black_30%,transparent_100%)]",
+            IconBox: $"bg-{c}-500/18 dark:bg-{c}-500/18 border-{c}-500/35 text-{c}-500",
+            Highlight: isPrimary
+                ? $"bg-gradient-to-r from-primary-700 via-primary-500 to-primary-300 dark:from-primary-500 dark:via-primary-300 dark:to-primary-200"
+                : $"bg-gradient-to-r from-{c}-500 to-primary-500 dark:from-{c}-400 dark:to-primary-300",
+            BtnPrimary: $"bg-{c}-500 text-base-900",
+            BtnSecondary: $"bg-{c}-500/12 border-{c}-500/30 hover:bg-{c}-500/20 hover:border-{c}-500/50",
+            FloatingIcon: $"text-{c}-500",
+            Glow: $"bg-[radial-gradient(ellipse_at_center,var(--color-{c}-500),transparent_70%)] opacity-[0.06]"
+        );
+    }
+
+    private record FloatingIconConfig(string IconName, double Top, double Right, double Size, double Delay, double Duration);
+    private FloatingIconConfig[] _floatingConfigs = [];
+
+    protected override void OnParametersSet()
+    {
+        if (FloatingIcons is not { Length: > 0 }) return;
+
+        var seed = HashString(Title);
+        var rand = new SeededRandom(seed);
+        var placed = new List<(double Top, double Right)>();
+        const double minDist = 22;
+
+        _floatingConfigs = FloatingIcons.Select(icon =>
+        {
+            var pos = GenerateSpacedPosition(rand, placed, minDist);
+            placed.Add(pos);
+            return new FloatingIconConfig(
+                icon,
+                Math.Round(pos.Top, 1),
+                Math.Round(pos.Right, 1),
+                Math.Round(1.5 + rand.Next() * 0.825, 2),
+                Math.Round(rand.Next() * 6, 1),
+                Math.Round(8.5 + rand.Next() * 6, 1)
+            );
+        }).ToArray();
+    }
+
+    private static (double Top, double Right) GenerateSpacedPosition(SeededRandom rand, List<(double Top, double Right)> placed, double minDist)
+    {
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            var top = 5 + rand.Next() * 80;
+            var right = 3 + rand.Next() * 85;
+            var tooClose = placed.Any(p => Math.Sqrt(Math.Pow(p.Top - top, 2) + Math.Pow(p.Right - right, 2)) < minDist);
+            if (!tooClose) return (top, right);
+        }
+        return (5 + rand.Next() * 80, 3 + rand.Next() * 85);
+    }
+
+    private static uint HashString(string s)
+    {
+        var h = 0;
+        foreach (var c in s)
+            h = ((h << 5) - h + c) | 0;
+        return (uint)Math.Abs(h);
+    }
+
+    private sealed class SeededRandom(uint seed)
+    {
+        private uint _state = seed;
+
+        public double Next()
+        {
+            _state = (_state + 0x6D2B79F5) | 0;
+            var t = (uint)((int)_state ^ (int)(_state >> 15));
+            t = (uint)((int)t * (1 | (int)_state));
+            t = (uint)((int)t + (int)((uint)((int)t ^ (int)(t >> 7)) * (61 | (int)t)));
+            t ^= t >> 14;
+            return t / 4294967296.0;
+        }
+    }
+}

@@ -1,0 +1,70 @@
+---
+title: Configuration settings
+description: Learn about Aspire CLI configuration, the rooted aspire.config.json file, and the settings surfaced by aspire config list --all.
+order: 109
+---
+
+
+
+Aspire configuration is a rooted `aspire.config.json` file for
+project-scoped CLI configuration. Use the `aspire config` command family to
+inspect and update those settings, and use `aspire config list --all` to see
+the feature flags surfaced by your installed CLI.
+
+## Configuration file model
+
+The consolidated `aspire.config.json` file can also contain other rooted Aspire
+configuration such as SDK version, launch profiles, and package pins. This page
+focuses on the settings surfaced through `aspire config`.
+
+## Example `aspire.config.json`
+
+```json title="aspire.config.json"
+{
+  "appHost": {
+    "path": "./src/MyApp.AppHost/MyApp.AppHost.csproj"
+  },
+  "channel": "staging",
+  "features": {
+    "defaultWatchEnabled": true,
+    "showAllTemplates": true,
+    "updateNotificationsEnabled": true
+  }
+}
+```
+
+## Settings surfaced by `aspire config`
+
+Use `aspire config list` to see the values that are currently set, and use
+`aspire config list --all` to enumerate the feature flags your installed CLI
+can configure.
+
+> [!TIP]
+> Some feature flags shown by `aspire config list --all` may correspond to
+>   preview, migration, or hidden functionality. Treat the output of your
+>   installed CLI as the authoritative source for what can be configured.
+
+## Working with configuration
+
+- Use `aspire config list` to show currently set project-scoped and global
+  values.
+
+- Use `aspire config list --all` to include the feature flags that your
+  installed CLI can configure.
+
+- Use `aspire config get <key>` to inspect a specific setting such as
+  `channel` or `appHostPath`.
+
+- Use `aspire config set <key> <value>` to update a setting, and
+  `aspire config set --global ...` when you want a user-scoped default.
+
+## CLI commands
+
+| Command                                                                         | Status | Function                                                                       |
+| ------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
+| [`aspire config`](/reference/cli/commands/aspire-config)                       | Stable | Command driver for managing Aspire configuration.                              |
+| [`aspire config list`](/reference/cli/commands/aspire-config-list)             | Stable | List currently configured values, or all available feature flags with `--all`. |
+| [`aspire config get <key>`](/reference/cli/commands/aspire-config-get)         | Stable | Get a configuration value.                                                     |
+| [`aspire config set <key> <value>`](/reference/cli/commands/aspire-config-set) | Stable | Set a configuration value.                                                     |
+| [`aspire config delete <key>`](/reference/cli/commands/aspire-config-delete)   | Stable | Delete a configuration value.                                                  |
+

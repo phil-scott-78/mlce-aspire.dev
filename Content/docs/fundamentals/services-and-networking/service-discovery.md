@@ -1,0 +1,184 @@
+---
+title: Service discovery
+description: Understand essential service discovery concepts in Aspire.
+order: 34
+---
+
+
+
+Service discovery is how your services find each other. Instead of hardcoding URLs like `http://localhost:5001`, your frontend can simply reference the `catalog` service by name—and Aspire handles resolving the actual address.
+
+## How service discovery works
+
+When you connect services using `WithReference()`, Aspire sets up automatic service discovery:
+
+1. **AppHost declares resources** and allocates endpoints
+2. **Configuration is injected** into each service via environment variables
+3. **Your code uses logical names** like `https+http://catalog`
+4. **Aspire's resolver** translates names to actual addresses at runtime
+
+**The key insight**: Your code uses logical service names (like `catalog`), and Aspire's configuration-based endpoint resolver translates those to actual addresses at runtime.
+
+> [!TIP] Why this matters
+> Service discovery eliminates "works on my machine" problems. The same code works locally (where `catalog` might be `localhost:5001`) and in production (where it might be `catalog.internal.cloudapp.net:443`)—without any code changes.
+
+## Implicit service discovery by reference
+
+Configuration for service discovery is only added for services that are referenced by a given project. For example, consider the following AppHost program:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var catalog = builder.AddProject<Projects.CatalogService>("catalog");
+var basket = builder.AddProject<Projects.BasketService>("basket");
+
+var frontend = builder.AddProject<Projects.MyFrontend>("frontend")
+                      .WithReference(basket)
+                      .WithReference(catalog);
+```
+
+In the preceding example, the _frontend_ project references the _catalog_ project and the _basket_ project. The two `WithReference` calls instruct Aspire to:
+
+1. **Inject configuration** - Pass service discovery information for `catalog` and `basket` into `frontend`
+2. **Enable resolution** - Allow `frontend` to use URIs like `https+http://catalog` in HttpClient
+
+> [!NOTE]
+> If you don't call `WithReference()`, the frontend won't have the configuration needed to discover that service. This is intentional—services only know about their explicit dependencies.
+
+## Named endpoints
+
+Some services expose multiple, named endpoints. Named endpoints can be resolved by specifying the endpoint name in the host portion of the HTTP request URI, following the format `scheme://_endpointName.serviceName`. For example, if a service named "basket" exposes an endpoint named "dashboard", then the URI `https+http://_dashboard.basket` can be used to specify this endpoint, for example:
+
+```csharp
+builder.Services.AddHttpClient<BasketServiceClient>(
+    static client => client.BaseAddress = new("https+http://basket"));
+
+builder.Services.AddHttpClient<BasketServiceDashboardClient>(
+    static client => client.BaseAddress = new("https+http://_dashboard.basket"));
+```
+
+In the preceding example, two `HttpClient` classes are added, one for the core basket service and one for the basket service's dashboard.
+
+### Named endpoints using configuration
+
+With the configuration-based endpoint resolver, named endpoints can be specified in configuration by prefixing the endpoint value with `_endpointName.`, where `endpointName` is the endpoint name. For example, consider this _appsettings.json_ configuration which defined a default endpoint (with no name) and an endpoint named "dashboard":
+
+```json
+{
+  "Services": {
+    "basket": {
+      "https": "https://10.2.3.4:8080" /* the https endpoint, requested via https://basket */,
+      "dashboard": "https://10.2.3.4:9999" /* the "dashboard" endpoint, requested via https://_dashboard.basket */
+    }
+  }
+}
+```
+
+In the preceding JSON:
+
+- The default endpoint, when resolving `https://basket` is `10.2.3.4:8080`.
+- The "dashboard" endpoint, resolved via `https://_dashboard.basket` is `10.2.3.4:9999`.
+
+### Named endpoints in Aspire
+
+Named endpoints can also be exposed by code in the App Host. For instance the previous example can be modeled as:
+
+```csharp
+var basket = builder.AddProject<Projects.BasketService>("basket")
+    .WithHttpsEndpoint(port: 9999, name: "dashboard");
+```
+
+### Named endpoints in Kubernetes using DNS SRV
+
+When deploying to Kubernetes, the DNS SRV service endpoint resolver can be used to resolve named endpoints. For example, the following resource definition will result in a DNS SRV record being created for an endpoint named "default" and an endpoint named "dashboard", both on the service named "basket".
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket
+spec:
+  selector:
+    name: basket-service
+  clusterIP: None
+  ports:
+    - name: default
+      port: 8080
+    - name: dashboard
+      port: 9999
+```
+
+To configure a service to resolve the "dashboard" endpoint on the "basket" service, add the DNS SRV service endpoint resolver to the host builder as follows:
+
+```csharp
+builder.Services.AddServiceDiscoveryCore();
+builder.Services.AddDnsSrvServiceEndpointProvider();
+```
+
+For more information, see `AddServiceDiscoveryCore` and `AddDnsSrvServiceEndpointProvider`.
+
+The special port name "default" is used to specify the default endpoint, resolved using the URI `https://basket`.
+
+As in the previous example, add service discovery to an `HttpClient` for the basket service:
+
+```csharp
+builder.Services.AddHttpClient<BasketServiceClient>(
+    static client => client.BaseAddress = new("https://basket"));
+```
+
+Similarly, the "dashboard" endpoint can be targeted as follows:
+
+```csharp
+builder.Services.AddHttpClient<BasketServiceDashboardClient>(
+    static client => client.BaseAddress = new("https://_dashboard.basket"));
+```
+
+## Troubleshooting
+
+### Service not found or "No endpoints resolved"
+
+**Symptoms**: HttpClient throws an exception like "No endpoints resolved for service 'myservice'" or connection is refused.
+
+**Common causes**:
+1. **Missing `WithReference()`** - The calling service wasn't connected to the target service in AppHost
+2. **Wrong service name** - The name in your URI doesn't match the name in `AddProject()` or `AddContainer()`
+3. **Service not started** - The target service failed to start or is still starting
+
+**Solution**: Verify your AppHost connects the services:
+
+```csharp
+var api = builder.AddProject<Projects.Api>("api");
+var frontend = builder.AddProject<Projects.Frontend>("frontend")
+    .WithReference(api);  // ← This is required!
+```
+
+### Named endpoint doesn't resolve
+
+**Symptoms**: Using `https://_endpointName.serviceName` returns an error.
+
+**Solution**: Verify the endpoint is named in your AppHost:
+
+```csharp
+var api = builder.AddProject<Projects.Api>("api")
+    .WithHttpEndpoint(port: 9999, name: "dashboard");  // ← Name must match
+```
+
+Then use the exact name with underscore prefix:
+
+```csharp
+client.BaseAddress = new("https://_dashboard.api");
+```
+
+### Understanding the URI format
+
+The `https+http://` prefix means "prefer HTTPS, fall back to HTTP". Here's the breakdown:
+
+| URI Format | Meaning |
+|------------|---------|
+| `https://catalog` | HTTPS only to default endpoint |
+| `http://catalog` | HTTP only to default endpoint |
+| `https+http://catalog` | Prefer HTTPS, fall back to HTTP |
+| `https://_admin.catalog` | HTTPS to named "admin" endpoint |
+
+> [!NOTE] The underscore prefix
+> The `_` prefix before an endpoint name is not arbitrary—it's required syntax that tells the resolver you're specifying a named endpoint rather than a subdomain.

@@ -1,0 +1,53 @@
+<PageTitle>Aspire Dashboard - Aspire</PageTitle>
+<HeadContent>
+    <meta name="description" content="Monitor, debug, and manage your distributed applications with the Aspire Dashboard — real-time telemetry, structured logs, traces, and AI-powered insights." />
+</HeadContent>
+
+<TopicHero
+    Icon="magnifier"
+    Title="Your app, at a glance."
+    Highlight="Fully observable."
+    Subtitle="Real-time visibility into every resource, log, trace, and metric in your distributed app — right from your dev environment."
+    Accent="blue"
+    FloatingIcons="@(new[] { "magnifier", "document", "setting", "open-book", "random" })"
+    PrimaryCta="@(("Explore features", "/dashboard/explore/"))"
+    SecondaryCta="@(("Read dashboard overview", "/dashboard/overview/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Built on OpenTelemetry</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">The Aspire Dashboard is your command center during development. Powered by <a href="https://opentelemetry.io/">OpenTelemetry</a> — the industry-standard observability framework — it automatically collects traces, metrics, and structured logs from every resource in your AppHost using OTLP (OpenTelemetry Protocol) and surfaces them through a rich, interactive UI. No vendor lock-in, no proprietary agents — just open standards.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Key capabilities</h2>
+
+<CapabilityGrid Columns="3" Capabilities="@_capabilities" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Beyond development</h2>
+
+<FeatureShowcase Features="@_beyondDev" />
+
+<CTABanner
+    Title="Ready to see your app in action?"
+    Description="The Aspire Dashboard is included in every Aspire project. Start building and it lights up automatically."
+    PrimaryCta="@(("Get started with Aspire", "/docs/get-started/first-app/"))"
+    SecondaryCta="@(("Explore all features", "/dashboard/explore/"))" />
+
+<SectionNavigation Previous="@(("Integrations", "/integrations/"))" Next="@(("Deployment", "/deployment/"))" />
+
+@code {
+    private static readonly List<CapabilityItem> _capabilities =
+    [
+        new("bars", "Resource management", "Start, stop, and restart any resource in your application. View endpoints, environment variables, and health status.", "/dashboard/explore/"),
+        new("magnifier", "Distributed tracing", "Follow requests across service boundaries with span-level detail. Identify bottlenecks and errors instantly.", "/dashboard/explore/#traces"),
+        new("document", "Structured & console logs", "View structured and console logs from every resource with powerful filtering, search, and error highlighting.", "/dashboard/explore/#structured-logs"),
+        new("bars", "Metrics & monitoring", "Track request counts, error rates, and custom metrics with interactive charts and exemplar linking.", "/dashboard/explore/#metrics"),
+        new("open-book", "OpenTelemetry native", "Built on OTLP — the open standard for telemetry. Works with any language or framework that supports OpenTelemetry.", "/dashboard/standalone/"),
+        new("laptop", "Standalone mode", "Use the dashboard independently as a Docker container to monitor any application that sends OpenTelemetry data.", "/dashboard/standalone/"),
+    ];
+
+    private static readonly List<FeatureItem> _beyondDev =
+    [
+        new("puzzle", "MCP server", "Expose dashboard data to AI agents and coding assistants via the Model Context Protocol. Your AI tools get full observability context.", "/dashboard/mcp-server/", "Configure MCP", "purple"),
+        new("setting", "Configuration", "Customize OTLP endpoints, authentication, telemetry limits, and more. The dashboard adapts to your workflow.", "/dashboard/configuration/", "View options", "blue"),
+        new("warning", "Security", "Understand security considerations for exposing dashboard data and configure authentication for production scenarios.", "/dashboard/security-considerations/", "Security guide", "orange"),
+        new("random", "Browser telemetry", "Enable browser-based telemetry collection to capture frontend performance data alongside backend traces.", "/dashboard/enable-browser-telemetry/", "Enable telemetry", "green"),
+    ];
+}

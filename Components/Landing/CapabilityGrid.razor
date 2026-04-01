@@ -1,0 +1,37 @@
+<div class="grid gap-5 my-6 grid-cols-1 lg:grid-cols-[repeat(var(--cap-cols,3),1fr)]" style="--cap-cols: @Columns">
+    @foreach (var cap in Capabilities)
+    {
+        if (!string.IsNullOrEmpty(cap.Href))
+        {
+            <a href="@cap.Href" class="flex gap-4 py-5 px-6 rounded-xl border border-base-400/20 bg-base-100/10 dark:bg-base-700/20 no-underline transition-all cursor-pointer hover:border-primary-500/40 hover:bg-primary-500/6 hover:-translate-y-0.5">
+                <div class="shrink-0 w-11 h-11 rounded-[0.625rem] grid place-items-center bg-primary-500/12 dark:bg-primary-500/16 text-primary-500">
+                    <SvgIcon Name="@cap.Icon" Size="24" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <h3 class="m-0 text-[0.95rem] font-bold text-base-900 dark:text-base-100 leading-tight">@cap.Title</h3>
+                    <p class="m-0 text-[0.85rem] leading-relaxed text-base-500 dark:text-base-400">@cap.Description</p>
+                    <span class="inline-flex items-center gap-1 text-[0.8rem] font-semibold text-primary-500 dark:text-primary-300 mt-1 transition-[gap]">
+                        Learn more <SvgIcon Name="right-arrow" Size="13" />
+                    </span>
+                </div>
+            </a>
+        }
+        else
+        {
+            <div class="flex gap-4 py-5 px-6 rounded-xl border border-base-400/20 bg-base-100/10 dark:bg-base-700/20">
+                <div class="shrink-0 w-11 h-11 rounded-[0.625rem] grid place-items-center bg-primary-500/12 dark:bg-primary-500/16 text-primary-500">
+                    <SvgIcon Name="@cap.Icon" Size="24" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <h3 class="m-0 text-[0.95rem] font-bold text-base-900 dark:text-base-100 leading-tight">@cap.Title</h3>
+                    <p class="m-0 text-[0.85rem] leading-relaxed text-base-500 dark:text-base-400">@cap.Description</p>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<CapabilityItem> Capabilities { get; set; } = [];
+    [Parameter] public int Columns { get; set; } = 3;
+}

@@ -1,0 +1,10 @@
+<div class="not-prose my-4">
+    <div class="rounded-lg border border-base-200 dark:border-base-800 bg-base-50 dark:bg-base-900 p-4">
+        <div class="text-xs font-medium text-base-500 dark:text-base-400 mb-2">Install the NuGet package</div>
+        <pre class="!m-0 !p-3 !rounded-md"><code class="language-bash">dotnet add package @PackageName</code></pre>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string PackageName { get; set; } = "";
+}

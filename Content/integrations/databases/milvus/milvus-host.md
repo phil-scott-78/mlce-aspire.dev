@@ -1,0 +1,193 @@
+---
+title: Milvus Hosting integration reference
+description: Learn how to use the Aspire Milvus Hosting integration to orchestrate and configure Milvus vector databases in your Aspire projects.
+order: 302
+---
+
+
+
+<IntegrationIcon Src="/assets/icons/milvus-icon.png" Alt="Milvus logo">
+
+To get started with the Aspire Milvus integrations, follow the [Get started with Milvus integrations](/integrations/databases/milvus/milvus-get-started) guide.
+</IntegrationIcon>
+
+This article includes full details about the Aspire Milvus Hosting integration, which models Milvus server and database resources as the `MilvusServerResource` and `MilvusDatabaseResource` types. To access these types and APIs, you need to install the Milvus Hosting integration in your AppHost project.
+
+## Installation
+
+The Aspire Milvus hosting integration models the Milvus vector database server as the following types:
+
+- `MilvusServerResource`
+- `MilvusDatabaseResource`
+
+To access these types and APIs for expressing them as resources in your AppHost project, install the [📦 Aspire.Hosting.Milvus](https://www.nuget.org/packages/Aspire.Hosting.Milvus) NuGet package:
+
+<InstallPackage PackageName="Aspire.Hosting.Milvus" />
+
+## Add Milvus server and database resources
+
+In the AppHost project, call `AddMilvus` to add and return a Milvus server resource builder. Chain a call to the returned resource builder to `AddDatabase`, to add a Milvus database to the server resource:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var milvus = builder.AddMilvus("milvus")
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(milvusdb)
+       .WaitFor(milvusdb);
+
+// After adding all resources, run the app...
+```
+
+> [!NOTE]
+> The Milvus container can be slow to start, so it's best to use a persistent lifetime to avoid unnecessary restarts. For more information, see [Container resource lifetime](/docs/architecture/resource-model/#built-in-resources-and-lifecycle).
+
+When Aspire adds a container image to the AppHost, as shown in the preceding example with the `milvusdb/milvus` image, it creates a new Milvus server on your local machine. A reference to your Milvus resource builder (the `milvus` variable) is used to add a database. The database is named `milvusdb` and then added to the `ExampleProject`.
+
+The `WithReference` method configures a connection in the `ExampleProject` named `"milvusdb"`. For more information, see [Container resource lifecycle](/docs/architecture/resource-model/#built-in-resources-and-lifecycle).
+
+> [!TIP]
+> If you'd rather connect to an existing Milvus server, call `AddConnectionString` instead. For more information, see [Reference existing resources](/docs/fundamentals/core-concepts/resources).
+
+## Add Milvus resource with API key parameter
+
+The Milvus resource includes default credentials with a `username` of `root` and the password `Milvus`. To change the default password in the container, pass an `apiKey` parameter:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var apiKey = builder.AddParameter("apiKey", secret: true);
+
+var milvus = builder.AddMilvus("milvus", apiKey)
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+var myService = builder.AddProject<Projects.ExampleProject>()
+                       .WithReference(milvusdb)
+                       .WaitFor(milvusdb);
+```
+
+The preceding code gets a parameter to pass to the `AddMilvus` API, and internally assigns the parameter to the Milvus container configuration. The `apiKey` parameter is usually specified as a user secret:
+
+```json title="JSON — secrets.json"
+{
+  "Parameters": {
+    "apiKey": "your-secure-password"
+  }
+}
+```
+
+For more information, see [External parameters](/docs/fundamentals/core-concepts/resources).
+
+## Add Milvus resource with data volume
+
+To add a data volume to the Milvus resource, call the `WithDataVolume` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var milvus = builder.AddMilvus("milvus")
+                    .WithDataVolume()
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(milvusdb)
+       .WaitFor(milvusdb);
+
+// After adding all resources, run the app...
+```
+
+The data volume is used to persist the Milvus data outside the lifecycle of its container. The data volume is mounted at the `/var/lib/milvus` path in the Milvus container and when a `name` parameter isn't provided, the name is generated at random. For more information on data volumes and details on why they're preferred over [bind mounts](#add-milvus-resource-with-data-bind-mount), see [Docker docs: Volumes](https://docs.docker.com/engine/storage/volumes).
+
+## Add Milvus resource with data bind mount
+
+To add a data bind mount to the Milvus resource, call the `WithDataBindMount` method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var milvus = builder.AddMilvus("milvus")
+                    .WithDataBindMount(source: @"C:\Milvus\Data")
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+builder.AddProject<Projects.ExampleProject>()
+       .WithReference(milvusdb)
+       .WaitFor(milvusdb);
+
+// After adding all resources, run the app...
+```
+
+> [!NOTE]
+> Data [bind mounts](https://docs.docker.com/engine/storage/bind-mounts/) have limited functionality compared to [volumes](https://docs.docker.com/engine/storage/volumes/), which offer better performance, portability, and security, making them more suitable for production environments. However, bind mounts allow direct access and modification of files on the host system, ideal for development and testing where real-time changes are needed.
+> 
+> Data bind mounts rely on the host machine's filesystem to persist the Milvus data across container restarts. The data bind mount is mounted at the `C:\Milvus\Data` on Windows (or `/Milvus/Data` on Unix) path on the host machine in the Milvus container. For more information on data bind mounts, see [Docker docs: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts).
+
+## Create an Attu resource
+
+[Attu](https://zilliz.com/attu) is a graphical user interface (GUI) and management tool designed to interact with Milvus and its databases. To use Attu, call the `WithAttu` extension method:
+
+```csharp title="C# — AppHost.cs"
+var builder = DistributedApplication.CreateBuilder(args);
+
+var milvus = builder.AddMilvus("milvus")
+                    .WithAttu()
+                    .WithLifetime(ContainerLifetime.Persistent);
+
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+var myService = builder.AddProject<Projects.ExampleProject>()
+                       .WithReference(milvusdb)
+                       .WaitFor(milvusdb);
+```
+
+When you debug the Aspire solution, you'll see an Attu container listed in the resources. Select the resource's endpoint to open the GUI.
+
+## Pass connection information to app resources
+
+When you use the `WithReference` method to pass a Milvus database resource to an app resource such as a Python or JavaScript app, Aspire automatically injects environment variables that describe the connection information.
+
+For example, if you reference a Milvus database resource named `milvusdb`:
+
+```csharp title="C# — AppHost.cs"
+var milvus = builder.AddMilvus("milvus");
+var milvusdb = milvus.AddDatabase("milvusdb");
+
+var pythonApp = builder.AddUvicornApp("api", "./api", "main:app")
+    .WithReference(milvusdb);
+```
+
+The following environment variables are available in the Python application:
+
+- `MILVUSDB_HOST` - The hostname of the Milvus server
+- `MILVUSDB_PORT` - The gRPC port number
+- `MILVUSDB_TOKEN` - The authentication token (format: `root:{password}`)
+- `MILVUSDB_URI` - The gRPC connection URI
+- `MILVUSDB_DATABASENAME` - The database name
+
+You can access these environment variables in your application code:
+
+```python title="Python example"
+from pymilvus import MilvusClient
+
+// Get connection properties
+const host = process.env.MILVUSDB_HOST;
+const port = process.env.MILVUSDB_PORT;
+const token = process.env.MILVUSDB_TOKEN;
+const databaseName = process.env.MILVUSDB_DATABASENAME;
+
+// Create Milvus client
+const client = new MilvusClient({
+  address: `${host}:${port}`,
+  token: token,
+  database: databaseName
+});
+```

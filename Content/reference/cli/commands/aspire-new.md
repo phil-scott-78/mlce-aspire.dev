@@ -1,0 +1,86 @@
+---
+title: aspire new command
+description: Learn about the aspire new command and its usage. This command creates new Aspire projects or solutions.
+order: 140
+---
+
+
+
+## Name
+
+`aspire new` - Create a new Aspire project or solution.
+
+## Synopsis
+
+```bash title="Aspire CLI"
+aspire new [command] [options]
+```
+
+## Description
+
+The `aspire new` command is the driver for creating Aspire projects, apps, or solutions, based on the Aspire templates. Each command specifies the template to use, and the options for the driver specify the options for the template.
+
+This command defaults to **interactive** mode. When executed without any options, the command prompts you for the project template and version, name, and output folder. When the `--name`, `--output`, and `--version` options are provided, the command runs **non-interactive** and generates files based on the command template.
+
+> [!NOTE]
+> The `aspire new` command currently requires an interactive terminal even when
+>   all options are provided. The `--non-interactive` flag is not fully supported.
+>   In CI/CD pipelines or other non-interactive environments, use `dotnet new`
+>   with Aspire templates as an alternative for project creation.
+
+## Options
+
+The following options are available:
+
+- **`-n, --name`**
+
+  The name of the project to create.
+
+- **`-o, --output`**
+
+  The output path for the project.
+
+- **`-s, --source`**
+
+  The NuGet source to use for the project templates.
+
+- **`-v, --version`**
+
+  The version of the project templates to use.
+
+- **`--channel`**
+
+  Channel to use for templates (`stable`, `staging`, `daily`).
+
+- - - - - - ## Commands
+
+Each command represents a template. Pass the `--help` parameter to the template command to print the options available to the template.
+
+| Command                | Template                          |
+| ---------------------- | --------------------------------- |
+| `aspire-starter`       | Starter App (ASP.NET Core/Blazor) |
+| `aspire-ts-cs-starter` | Starter App (ASP.NET Core/React)  |
+| `aspire-py-starter`    | Starter App (FastAPI/React)       |
+| `aspire-ts-starter`    | Starter App (Express/React)       |
+| `aspire-empty`         | Empty (C# AppHost)                |
+| `aspire-ts-empty`      | Empty (TypeScript AppHost)        |
+
+## Examples
+
+- Create an Aspire solution from the template. Because the template was selected (`aspire-starter`), you're prompted for the name, output folder, and template version.
+
+  ```bash title="Aspire CLI"
+  aspire new aspire-starter
+  ```
+
+- Create an AppHost project named `aspireapp` from the **13.2.0** templates and place the output in a folder named `dev`.
+
+  ```bash title="Aspire CLI"
+  aspire new aspire-empty --version 13.2.0 --name aspireapp --output ./dev
+  ```
+
+- Create an Aspire starter app using templates from the `daily` channel to get the latest pre-release templates.
+
+  ```bash title="Aspire CLI"
+  aspire new aspire-starter --channel daily
+  ```
