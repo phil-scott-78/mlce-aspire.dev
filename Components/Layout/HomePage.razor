@@ -1,4 +1,67 @@
 @page "/"
 @layout HomeLayout
 
-<HomeLanding />
+<PageTitle>Aspire — Your stack, streamlined</PageTitle>
+<HeadContent>
+    <meta name="description" content="Add Aspire to your stack and streamline your development workflow with code-first control, modularity, and observability." />
+</HeadContent>
+
+<HeroSection
+    Title="Your stack,"
+    Highlight="streamlined."
+    Subtitle="Orchestrate front ends, APIs, containers, and databases effortlessly — no rewrites, no limits. Extend Aspire to power any project. Free, open-source, and agent ready."
+    PrimaryCta="@(("Get Aspire", "/docs/get-started/setup-and-tooling/install-cli/"))"
+    SecondaryCta="@(("Explore Docs", "/docs/"))" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Why developers choose Aspire</h2>
+
+<CapabilityGrid Columns="3" Capabilities="@_whyAspire" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Define your stack in code</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Aspire is modular, composable, and extensible. Configure relationships, deployment options, and dev-time flags in one place. <a href="/docs/fundamentals/core-concepts/app-host/">Learn more about the AppHost</a>.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Multi-language support</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300"><strong>Built for your stack</strong>, Aspire orchestrates apps in C#, Java, Python, JavaScript, TypeScript, Go, and more — use the languages you prefer. <a href="/docs/fundamentals/core-concepts/resources/">Explore how to model your apps</a>.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Local-first, production-ready</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300"><strong>Built for local development</strong>, Aspire mirrors production environments on your machine, eliminating "works on my machine" issues for smooth deployments. <a href="/deployment/pipelines/">Learn about pipelines and app topology</a>.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Same model, different environments</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Use Aspire's CLI to spin everything up locally or create deployment artifacts during your CI/CD. <a href="/docs/get-started/first-app/">Dive in, and build your first Aspire app</a>.</p>
+
+<CapabilityGrid Columns="2" Capabilities="@_environments" />
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">OpenTelemetry developer dashboard</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300"><strong>Monitor logs, metrics, and traces</strong> in real time with the ready-to-use OpenTelemetry dashboard, integrated directly into your workflow. <a href="/dashboard/">Dive into the dashboard</a>.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Explore integrations</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300"><strong>Multi-cloud, limitless integrations</strong> — Connect Aspire to Azure, AWS, or your own infrastructure. Tap into a vast ecosystem of integrations to power any stack, anywhere. <a href="/integrations/">Discover all integrations</a>.</p>
+
+<h2 class="text-2xl font-bold mt-10 mb-3 text-base-900 dark:text-base-100 pb-2 border-b border-base-200 dark:border-base-700">Ready for liftoff?</h2>
+<p class="text-[0.95rem] leading-relaxed text-base-500 dark:text-base-400 mb-4 max-w-3xl [&_a]:text-primary-500 dark:[&_a]:text-primary-300">Get started with Aspire by installing the CLI, then dive into the Docs to learn how to model, run, and deploy your applications.</p>
+
+<CapabilityGrid Columns="2" Capabilities="@_readyForLiftoff" />
+
+@code {
+    private static readonly List<CapabilityItem> _whyAspire =
+    [
+        new("laptop", "Code-centric control", "Define your stack in code — type-safe and readable. Run locally, deploy anywhere without architectural changes."),
+        new("puzzle", "Modular and extensible", "Orchestrate front ends, APIs, containers, and databases with zero rewrites. Extend Aspire to fit your stack — deploy anywhere."),
+        new("magnifier", "Observability from the start", "Built-in OpenTelemetry delivers logs, traces, and health checks automatically — debug faster with zero setup."),
+        new("rocket", "Flexible deployments", "Deploy anywhere — Kubernetes, cloud, or on-prem. Aspire adapts to your environment for consistent deployments without rewrites."),
+        new("star", "Your coding agents, supercharged", "Aspire is the control plane for agentic dev. AI agents use your app model to understand, build, and operate your entire stack.", "/docs/get-started/ai-coding-agents/"),
+        new("download", "Get started quickly", "Install the Aspire CLI, run aspire init in your repo, and fuel your agents with aspire agent init.", "/docs/get-started/setup-and-tooling/install-cli/"),
+    ];
+
+    private static readonly List<CapabilityItem> _environments =
+    [
+        new("laptop", "Local development", "Runs with your local container runtime. Dashboard available on localhost. Uses dev secrets, volumes, dev-time config.", "/reference/cli/commands/aspire-run/"),
+        new("rocket", "Production deployment", "Same app structure, deployed where you want. Use managed cloud services or your own infra. Integrates with CI/CD pipelines seamlessly.", "/reference/cli/commands/aspire-deploy/"),
+    ];
+
+    private static readonly List<CapabilityItem> _readyForLiftoff =
+    [
+        new("rocket", "Get Aspire", "Install Aspire and streamline your workflow.", "/docs/get-started/setup-and-tooling/install-cli/"),
+        new("open-book", "Explore docs", "Learn how to model, run, and deploy apps with Aspire.", "/docs/"),
+    ];
+}
