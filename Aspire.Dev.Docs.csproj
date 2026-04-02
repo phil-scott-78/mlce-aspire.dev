@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MyLittleContentEngine" Version="0.0.0-alpha.0.314" />
-    <PackageReference Include="MyLittleContentEngine.MonorailCss" Version="0.0.0-alpha.0.314" />
-    <PackageReference Include="MyLittleContentEngine.UI" Version="0.0.0-alpha.0.314" />
+    <PackageReference Include="MyLittleContentEngine" Version="0.0.2-alpha.0.4" />
+    <PackageReference Include="MyLittleContentEngine.MonorailCss" Version="0.0.2-alpha.0.4" />
+    <PackageReference Include="MyLittleContentEngine.UI" Version="0.0.2-alpha.0.4" />
   </ItemGroup>
 
 </Project>
